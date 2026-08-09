@@ -4,9 +4,9 @@
 
 ## Come funziona, in due righe
 
-Alexa non parla Bluetooth e non potrà mai farlo. La skill si limita a
-pubblicare un comando testuale su un canale di `ntfy.sh`; l'app aperta e
-connessa al topino a casa lo riceve e lo esegue.
+Alexa non può parlare Bluetooth e non potrà mai. La skill si limita a pubblicare
+un comando testuale su un canale di `ntfy.sh`; l'app aperta e connessa al topino
+a casa lo riceve e lo esegue.
 
 ```
 "Alexa, chiedi a topino…"  →  skill (ospitata da Amazon)  →  ntfy.sh
@@ -14,19 +14,19 @@ connessa al topino a casa lo riceve e lo esegue.
                         topino  ←──BLE──  app aperta a casa (in ascolto)
 ```
 
-**Serve un solo account gratuito: Amazon Developer.** Niente AWS, niente carta
-di credito, niente server: il codice gira dentro la console di Amazon e il
-canale di ntfy.sh non richiede registrazione.
+**Serve un solo account gratuito: Amazon Developer.** Niente AWS, niente carta di
+credito, niente server: il codice gira dentro la console di Amazon, e il canale
+di ntfy.sh non richiede registrazione.
 
-## Quello che serve avere acceso
+## Quello che deve essere acceso
 
 | | |
 |---|---|
 | Il topino | **acceso** (nessun software può girare quell'interruttore) e carico — ~60 min |
 | Un dispositivo a casa | PC o telefono con l'app **aperta in primo piano**, connessa al topino, con «Ascolta comandi a distanza» attivo |
 
-Un PC fisso con la scheda di Chrome in primo piano è la soluzione più stabile:
-sui telefoni il sistema sospende le schede in secondo piano e il collegamento cade.
+Un PC con la scheda di Chrome in primo piano è la soluzione più stabile: i
+telefoni sospendono le schede in secondo piano e il collegamento cade.
 
 ---
 
@@ -37,52 +37,65 @@ Apri l'app → **⚙** → attiva **«Ascolta comandi a distanza»** → copia i
 
 Sotto deve comparire **in ascolto ✓**.
 
-> Chi conosce quel canale può far muovere il topino — nient'altro: nessun
-> accesso al telefono, alla rete o alla webcam. Non pubblicarlo in giro. Se ti
-> sfugge, il pulsante ↻ ne genera uno nuovo (poi va aggiornato anche qui).
+> Chi conosce quel canale può far muovere il topino — nient'altro: nessun accesso
+> al telefono, alla rete di casa o alla webcam. Non pubblicarlo. Se ti sfugge, il
+> pulsante ↻ ne genera uno nuovo (poi va aggiornato anche nella skill).
 
-## Passo 2 — Crea la skill
+## Passo 2 — Crea la skill importandola da GitHub
 
-1. Vai su **developer.amazon.com/alexa/console/ask** e accedi con lo stesso
-   account Amazon del tuo Echo (deve essere lo stesso, altrimenti non la vedrà).
-2. **Create Skill**
-   - Nome: `topino`
-   - Lingua: **Italiano (IT)**
-   - Tipo: **Custom**
-   - Hosting: **Alexa-hosted (Node.js)** ← è questo che rende tutto gratuito
-   - Template: **Start from Scratch**
-3. Aspetta un paio di minuti che finisca di crearsi.
+Su **developer.amazon.com/alexa/console/ask**, accedi **con lo stesso account
+Amazon del tuo Echo** (se è diverso, l'Echo non vedrà mai la skill).
 
-## Passo 3 — Incolla il modello vocale
+1. **Create Skill**
+2. **Skill name**: `topino`
+3. **Primary locale / Default language**: **Italiano (IT)** — dev'essere la stessa
+   lingua del tuo Echo
+4. **Choose a model**: **Custom**
+5. **Choose a method to host**: **Alexa-Hosted (Node.js)** ← è questo che rende
+   tutto gratuito
+6. **Create Skill**
+7. Nella pagina dei template **non scegliere un template**: premi **Import skill**
+   in alto a destra
+8. Incolla questo indirizzo e premi **Continue**:
 
-Nella colonna a sinistra: **Interaction Model → JSON Editor**.
-Cancella tutto e incolla il contenuto di [`interaction-model.json`](interaction-model.json).
+   ```
+   https://github.com/P3DSprinting/topino.git
+   ```
 
-Poi **Save Model** e **Build Model** (il build dura 1-2 minuti).
+Amazon scarica il progetto e in un paio di minuti la skill è pronta, già con il
+modello vocale italiano e il codice al posto giusto.
 
-## Passo 4 — Incolla il codice
+> Se l'importazione dovesse fallire, in fondo trovi la via manuale: funziona
+> uguale, richiede solo due copia-incolla in più.
 
-Scheda **Code** in alto. Apri `index.js`, cancella tutto e incolla il contenuto
-di [`index.js`](index.js).
+## Passo 3 — Incolla il tuo canale e pubblica
 
-**Cambia la prima riga utile**, sostituendo il canale copiato al passo 1:
+Scheda **Code** in alto → apri `lambda/index.js` → trova questa riga vicino
+all'inizio:
+
+```js
+const CANALE = 'INCOLLA-QUI-IL-CANALE';
+```
+
+Sostituisci con il canale copiato al passo 1:
 
 ```js
 const CANALE = 'topino-a3f9k2m8x1qz4b';
 ```
 
-Poi **Save** e **Deploy** (un paio di minuti).
+**Save** e poi **Deploy** (un paio di minuti).
 
-## Passo 5 — Prova
+## Passo 4 — Prova
 
-Scheda **Test** in alto, e imposta il menù a tendina da *Off* a **Development**.
-Scrivi (o parla): `apri topino` e poi `avvia la caccia`.
+Scheda **Test** in alto, e sposta il menù a tendina da *Off* a **Development**.
 
-Se l'app a casa è in ascolto, vedrai comparire un avviso `da Alexa: caccia:nervoso`
-e il topino parte.
+Scrivi (o parla): `apri topino`, poi `avvia la caccia`.
 
-Da qui in poi funziona anche dagli Echo di casa, **senza pubblicare la skill**:
-in modalità Development è già attiva su tutti i dispositivi del tuo account.
+Se l'app a casa è in ascolto, compare un avviso `da Alexa: caccia:nervoso` e il
+topino parte.
+
+Da qui in poi funziona anche dagli Echo di casa **senza pubblicare la skill**: in
+modalità Development è già attiva su tutti i dispositivi del tuo account.
 
 ---
 
@@ -90,8 +103,8 @@ in modalità Development è già attiva su tutti i dispositivi del tuo account.
 
 | Frase | Effetto |
 |---|---|
-| «Alexa, chiedi a topino di avviare la caccia» | parte la modalità caccia, andatura *nervoso* |
-| «…di avviare la caccia impazzita» | caccia con l'andatura più agitata |
+| «Alexa, chiedi a topino di avviare la caccia» | parte la caccia, andatura *nervoso* |
+| «…di avviare la caccia impazzita» | andatura più agitata |
 | «…caccia timida» | pause lunghe, scatti corti |
 | «Alexa, chiedi a topino di fermarsi» | stop immediato |
 | «…di andare piano» / «…di andare forte» | tetto di velocità al 30% / 100% |
@@ -101,16 +114,29 @@ in modalità Development è già attiva su tutti i dispositivi del tuo account.
 
 | Sintomo | Causa quasi sempre |
 |---|---|
-| Alexa: «Non riesco a raggiungere il topino» | il codice ha risposto ma ntfy ha rifiutato: controlla che `CANALE` sia scritto giusto |
-| Alexa risponde bene ma il topino non si muove | l'app a casa non è in ascolto, non è connessa, o è finita in secondo piano |
-| «Non conosco questa skill» | la skill non è in **Development**, o l'Echo usa un account Amazon diverso |
-| Funziona da Test ma non dall'Echo | lingua della skill diversa da quella dell'Echo (dev'essere Italiano) |
+| «Non riesco a raggiungere il topino» | `CANALE` scritto male nel codice, o Deploy non fatto |
+| Alexa risponde bene ma il topino sta fermo | l'app a casa non è in ascolto, non è connessa, o è finita in secondo piano |
+| «Non conosco questa skill» | la skill non è in **Development**, o l'Echo usa un altro account Amazon |
+| Funziona da Test ma non dall'Echo | lingua della skill diversa da quella dell'Echo |
+| L'importazione da Git fallisce | usa la via manuale qui sotto |
+
+## Via manuale (se l'import da Git non va)
+
+Crea la skill come al passo 2 ma scegli il template **Start from Scratch**, poi:
+
+1. **Build → Interaction Model → JSON Editor**: cancella tutto e incolla il
+   contenuto di
+   [`skill-package/interactionModels/custom/it-IT.json`](../skill-package/interactionModels/custom/it-IT.json).
+   Poi **Save Model** e **Build Model**.
+2. **Code → `index.js`**: cancella tutto e incolla il contenuto di
+   [`lambda/index.js`](../lambda/index.js), cambia la riga `CANALE`, poi **Save**
+   e **Deploy**.
 
 ## Limiti, detti chiaramente
 
 - **Il topino deve essere già acceso.** Nessun comando vocale può girare un
-  interruttore fisico. Se esci e lo lasci spento, Alexa non può farci nulla.
-- **Batteria ~60 minuti.** Non è pensato per stare acceso tutto il giorno.
+  interruttore fisico.
+- **Batteria ~60 minuti**: non è pensato per restare pronto tutto il giorno.
 - **Serve un dispositivo a casa** con l'app aperta e connessa: è lui il ponte.
-- **Il comando è a senso unico.** Alexa non sa se il topino si è davvero mosso:
-  conferma di aver mandato il comando, non l'esito.
+- **Il comando è a senso unico.** Alexa conferma di aver inviato il comando, non
+  che il topino si sia mosso davvero.
