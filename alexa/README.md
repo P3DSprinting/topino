@@ -106,9 +106,35 @@ modalità Development è già attiva su tutti i dispositivi del tuo account.
 | «Alexa, chiedi a topo robot di avviare la caccia» | parte la caccia, andatura *nervoso* |
 | «…di avviare la caccia impazzita» | andatura più agitata |
 | «…caccia timida» | pause lunghe, scatti corti |
+| «…di giocare per cinque minuti» | **si ferma da sola dopo il tempo detto** |
 | «Alexa, chiedi a topo robot di fermarsi» | stop immediato |
 | «…di andare piano» / «…di andare forte» | tetto di velocità al 30% / 100% |
 | «Alexa, apri topo robot» | apre la sessione: poi basta dire «avvia la caccia» |
+
+Il modello riconosce una sessantina di formulazioni: *fai giocare il gatto*,
+*libera il topo*, *fai partire il topino*, *scappa*, *corri*, *fermalo*,
+*spegni il topino*, *basta così*, *alt*…
+
+## Frasi brevi: le Routine
+
+Fermare la caccia a voce è scomodo per un motivo strutturale: appena la skill
+risponde, **la sessione si chiude**. Da quel momento «Alexa, ferma» non arriva
+più alla skill — Alexa lo interpreta come "ferma la musica". Serve ogni volta la
+frase lunga.
+
+La soluzione sono le **Routine**, che ti fanno inventare la scorciatoia che vuoi:
+
+1. App Alexa → **Altro** → **Routine** → **+**
+2. **Quando accade questo** → *Voce* → scrivi la frase che vuoi, es. `caccia al topo`
+3. **Aggiungi azione** → **Personalizzato** → scrivi
+   `chiedi a topo robot di avviare la caccia`
+4. Salva.
+
+Da lì basta dire **«Alexa, caccia al topo»**. Fanne una seconda con `basta topo`
+→ `chiedi a topo robot di fermarsi` e hai anche lo stop in due parole.
+
+> In alternativa, il modo più semplice per non doverlo fermare è **dire quanto
+> deve durare fin dall'inizio**: «…di giocare per cinque minuti».
 
 ## Se non funziona
 

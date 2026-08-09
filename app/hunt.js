@@ -56,14 +56,21 @@ export class Hunt extends EventTarget {
 
   setProfile(name) { this.profile = PROFILES[name] || PROFILES.nervoso; }
 
-  start() {
+  /** @param {{minuti?: number}} opzioni durata prima dello spegnimento automatico */
+  start({ minuti } = {}) {
     this.stop(true);
     this.running = true;
     this._heading = rand(0, 360);
 
+    // A voce fermarlo è scomodo (la sessione della skill si chiude subito),
+    // quindi la durata è la vera via d'uscita: la si dice all'avvio.
+    const durata = Number.isFinite(minuti) && minuti > 0
+      ? Math.min(minuti, 60) * 60_000
+      : this.autoStopMs;
+
     // Il driver si ferma se non riceve input per 400 ms: qui glielo rinfresco.
     this._pushTimer = setInterval(() => this.mouse.setVector(this._vec.x, this._vec.y), 120);
-    this._stopTimer = setTimeout(() => { this.stop(); this._emit(); }, this.autoStopMs);
+    this._stopTimer = setTimeout(() => { this.stop(); this._emit(); }, durata);
 
     this._next();
     this._emit();

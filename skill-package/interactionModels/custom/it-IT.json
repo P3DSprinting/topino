@@ -3,68 +3,91 @@
     "languageModel": {
       "invocationName": "topo robot",
       "intents": [
-        {
-          "name": "AMAZON.CancelIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.HelpIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.StopIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.NavigateHomeIntent",
-          "samples": []
-        },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
         {
           "name": "AvviaCacciaIntent",
           "slots": [
-            {
-              "name": "profilo",
-              "type": "TipoProfilo"
-            }
+            { "name": "profilo", "type": "TipoProfilo" },
+            { "name": "durata", "type": "AMAZON.NUMBER" }
           ],
           "samples": [
             "avvia la caccia",
+            "avvia caccia",
+            "attiva la caccia",
             "inizia la caccia",
+            "inizia a giocare",
+            "comincia la caccia",
+            "fai partire il topo",
+            "fai partire il topino",
+            "fai muovere il topo",
+            "fai muovere il topino",
+            "fai giocare il gatto",
+            "gioca col gatto",
+            "gioca con il gatto",
+            "libera il topo",
+            "scappa",
+            "corri",
+            "muoviti",
             "parti",
             "vai",
-            "fai giocare il gatto",
-            "fai partire il topino",
-            "muoviti",
+            "caccia",
             "avvia la caccia {profilo}",
+            "avvia una caccia {profilo}",
             "caccia {profilo}",
             "modalità {profilo}",
-            "fai il {profilo}"
+            "fai il {profilo}",
+            "gioca in modo {profilo}",
+            "diventa {profilo}",
+            "avvia la caccia per {durata} minuti",
+            "avvia la caccia per {durata}",
+            "gioca per {durata} minuti",
+            "corri per {durata} minuti",
+            "caccia per {durata} minuti",
+            "fai giocare il gatto per {durata} minuti",
+            "avvia la caccia {profilo} per {durata} minuti"
           ]
         },
         {
           "name": "FermaIntent",
           "samples": [
-            "ferma il topino",
             "ferma",
             "fermati",
-            "basta",
+            "fermalo",
+            "ferma il topo",
+            "ferma il topino",
+            "blocca il topo",
+            "blocca il topino",
+            "spegni",
+            "spegni il topo",
             "spegni il topino",
-            "smetti"
+            "smetti",
+            "smettila",
+            "basta così",
+            "finisci",
+            "fine",
+            "alt",
+            "fermo lì",
+            "non muoverti",
+            "riposo"
           ]
         },
         {
           "name": "VelocitaIntent",
           "slots": [
-            {
-              "name": "quanto",
-              "type": "TipoVelocita"
-            }
+            { "name": "quanto", "type": "TipoVelocita" }
           ],
           "samples": [
             "vai {quanto}",
+            "vai più {quanto}",
             "muoviti {quanto}",
+            "corri {quanto}",
             "velocità {quanto}",
-            "corri {quanto}"
+            "fai più {quanto}",
+            "più {quanto}",
+            "{quanto}"
           ]
         }
       ],
@@ -72,61 +95,16 @@
         {
           "name": "TipoProfilo",
           "values": [
-            {
-              "name": {
-                "value": "timido",
-                "synonyms": [
-                  "calmo",
-                  "tranquillo",
-                  "piano"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "nervoso",
-                "synonyms": [
-                  "normale",
-                  "medio"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "impazzito",
-                "synonyms": [
-                  "matto",
-                  "scatenato",
-                  "pazzo",
-                  "veloce"
-                ]
-              }
-            }
+            { "name": { "value": "timido", "synonyms": ["calmo", "tranquillo", "lento", "dolce", "morbido"] } },
+            { "name": { "value": "nervoso", "synonyms": ["normale", "medio", "solito", "standard"] } },
+            { "name": { "value": "impazzito", "synonyms": ["matto", "scatenato", "pazzo", "isterico", "agitato", "selvaggio"] } }
           ]
         },
         {
           "name": "TipoVelocita",
           "values": [
-            {
-              "name": {
-                "value": "piano",
-                "synonyms": [
-                  "lento",
-                  "lentamente",
-                  "calmo"
-                ]
-              }
-            },
-            {
-              "name": {
-                "value": "forte",
-                "synonyms": [
-                  "veloce",
-                  "velocemente",
-                  "al massimo"
-                ]
-              }
-            }
+            { "name": { "value": "piano", "synonyms": ["lento", "lentamente", "calmo", "adagio", "tranquillo"] } },
+            { "name": { "value": "forte", "synonyms": ["veloce", "velocemente", "al massimo", "svelto", "rapido"] } }
           ]
         }
       ]

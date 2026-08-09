@@ -67,18 +67,20 @@ export class Remote extends EventTarget {
     this._emit('state', { on: false, error: null });
   }
 
-  /** Esegue un comando testuale. Formato: `azione` oppure `azione:argomento`. */
+  /** Esegue un comando testuale. Formato: `azione[:argomento[:extra]]`. */
   exec(cmd) {
-    const [azione, arg] = cmd.split(':');
+    const [azione, arg, extra] = cmd.split(':');
     this.lastCommand = cmd;
     this.lastAt = Date.now();
 
     switch (azione) {
-      case 'caccia':
+      case 'caccia': {
         if (arg === 'stop') { this.hunt.stop(); break; }
         if (arg) this.hunt.setProfile(arg);
-        this.hunt.start();
+        const minuti = parseFloat(extra);
+        this.hunt.start(Number.isFinite(minuti) ? { minuti } : {});
         break;
+      }
 
       case 'stop':
         this.hunt.stop();

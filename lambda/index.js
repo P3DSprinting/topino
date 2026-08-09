@@ -75,8 +75,17 @@ const LaunchRequestHandler = {
 const AvviaCacciaHandler = intent('AvviaCacciaIntent', h => {
   const profilo = (Alexa.getSlotValue(h.requestEnvelope, 'profilo') || '').toLowerCase();
   const scelto = ['timido', 'nervoso', 'impazzito'].includes(profilo) ? profilo : 'nervoso';
-  return esegui(h, `caccia:${scelto}`,
-    `Caccia avviata, andatura ${scelto}. Buon divertimento al gatto.`);
+
+  // Fermare la caccia a voce è scomodo: a sessione chiusa "Alexa, ferma" non
+  // arriva più alla skill. Dire la durata all'avvio è la via d'uscita comoda.
+  const n = parseInt(Alexa.getSlotValue(h.requestEnvelope, 'durata'), 10);
+  const minuti = Number.isFinite(n) && n > 0 ? Math.min(n, 60) : null;
+
+  return esegui(h,
+    minuti ? `caccia:${scelto}:${minuti}` : `caccia:${scelto}`,
+    minuti
+      ? `Caccia avviata per ${minuti} minut${minuti === 1 ? 'o' : 'i'}, andatura ${scelto}.`
+      : `Caccia avviata, andatura ${scelto}. Buon divertimento al gatto.`);
 });
 
 const FermaHandler = intent('FermaIntent', h => esegui(h, 'stop', 'Topino fermo.'));
