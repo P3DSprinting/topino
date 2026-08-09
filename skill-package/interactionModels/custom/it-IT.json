@@ -1,17 +1,35 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "topo robot",
+      "invocationName": "topo scattante",
       "intents": [
-        { "name": "AMAZON.CancelIntent", "samples": [] },
-        { "name": "AMAZON.HelpIntent", "samples": [] },
-        { "name": "AMAZON.StopIntent", "samples": [] },
-        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
         {
           "name": "AvviaCacciaIntent",
           "slots": [
-            { "name": "profilo", "type": "TipoProfilo" },
-            { "name": "durata", "type": "AMAZON.NUMBER" }
+            {
+              "name": "profilo",
+              "type": "TipoProfilo"
+            },
+            {
+              "name": "durata",
+              "type": "AMAZON.NUMBER"
+            }
           ],
           "samples": [
             "avvia la caccia",
@@ -77,7 +95,10 @@
         {
           "name": "VelocitaIntent",
           "slots": [
-            { "name": "quanto", "type": "TipoVelocita" }
+            {
+              "name": "quanto",
+              "type": "TipoVelocita"
+            }
           ],
           "samples": [
             "vai {quanto}",
@@ -95,16 +116,71 @@
         {
           "name": "TipoProfilo",
           "values": [
-            { "name": { "value": "timido", "synonyms": ["calmo", "tranquillo", "lento", "dolce", "morbido"] } },
-            { "name": { "value": "nervoso", "synonyms": ["normale", "medio", "solito", "standard"] } },
-            { "name": { "value": "impazzito", "synonyms": ["matto", "scatenato", "pazzo", "isterico", "agitato", "selvaggio"] } }
+            {
+              "name": {
+                "value": "timido",
+                "synonyms": [
+                  "calmo",
+                  "tranquillo",
+                  "lento",
+                  "dolce",
+                  "morbido"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "nervoso",
+                "synonyms": [
+                  "normale",
+                  "medio",
+                  "solito",
+                  "standard"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "impazzito",
+                "synonyms": [
+                  "matto",
+                  "scatenato",
+                  "pazzo",
+                  "isterico",
+                  "agitato",
+                  "selvaggio"
+                ]
+              }
+            }
           ]
         },
         {
           "name": "TipoVelocita",
           "values": [
-            { "name": { "value": "piano", "synonyms": ["lento", "lentamente", "calmo", "adagio", "tranquillo"] } },
-            { "name": { "value": "forte", "synonyms": ["veloce", "velocemente", "al massimo", "svelto", "rapido"] } }
+            {
+              "name": {
+                "value": "piano",
+                "synonyms": [
+                  "lento",
+                  "lentamente",
+                  "calmo",
+                  "adagio",
+                  "tranquillo"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "forte",
+                "synonyms": [
+                  "veloce",
+                  "velocemente",
+                  "al massimo",
+                  "svelto",
+                  "rapido"
+                ]
+              }
+            }
           ]
         }
       ]

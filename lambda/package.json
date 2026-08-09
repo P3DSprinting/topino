@@ -1,7 +1,7 @@
 {
   "name": "topino-alexa",
   "version": "1.0.0",
-  "description": "Skill Alexa per il topo robot MORE Mouse Racer",
+  "description": "Skill Alexa per il topo robot MORE Mouse Racer (invocazione: topo scattante)",
   "main": "index.js",
   "private": true,
   "dependencies": {

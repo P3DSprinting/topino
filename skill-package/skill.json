@@ -5,12 +5,12 @@
       "locales": {
         "it-IT": {
           "name": "topino",
-          "summary": "Comanda a voce il topo robot per gatti.",
-          "description": "Avvia la modalità caccia del topo robot MORE Mouse Racer, lo ferma e ne regola la velocità. Richiede l'app Topino aperta e connessa al giocattolo su un dispositivo in casa: Alexa non può parlare Bluetooth, quindi il comando vocale viene inoltrato all'app, che lo esegue.",
+          "summary": "Comanda a voce il topo scattante per gatti.",
+          "description": "Avvia la modalità caccia del topo scattante MORE Mouse Racer, lo ferma e ne regola la velocità. Richiede l'app Topino aperta e connessa al giocattolo su un dispositivo in casa: Alexa non può parlare Bluetooth, quindi il comando vocale viene inoltrato all'app, che lo esegue.",
           "examplePhrases": [
-            "Alexa, chiedi a topo robot di avviare la caccia",
-            "Alexa, chiedi a topo robot di fermarsi",
-            "Alexa, chiedi a topo robot di andare piano"
+            "Alexa, chiedi a topo scattante di avviare la caccia",
+            "Alexa, chiedi a topo scattante di fermarsi",
+            "Alexa, chiedi a topo scattante di andare piano"
           ],
           "keywords": ["gatto", "gatti", "topo", "giocattolo", "animali"]
         }

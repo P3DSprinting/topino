@@ -1,6 +1,6 @@
 # Topino
 
-Joystick analogico via Bluetooth LE per il topo robot **MORE App Mouse Racer**
+Joystick analogico via Bluetooth LE per il topo scattante **MORE App Mouse Racer**
 (MultiFit / Fressnapf, EAN `4047777200697`), in sostituzione della croce
 direzionale a quattro pulsanti dell'app ufficiale.
 
@@ -29,7 +29,7 @@ due valori. Dettagli in [PROTOCOL.md](PROTOCOL.md).
   (pause immobili, scatti, zigzag, retromarcia) in tre profili. Si spegne da sola dopo 10 minuti.
 - **Joypad**: stick sinistro, R2 per il boost, cerchio per lo stop. Testato con DualSense.
 - **PWA**: si installa dalla schermata Home, va a schermo intero e funziona offline.
-- **Comandi vocali Alexa** da fuori casa — «Alexa, chiedi a topo robot di avviare la caccia».
+- **Comandi vocali Alexa** da fuori casa — «Alexa, chiedi a topo scattante di avviare la caccia».
   Vedi [`alexa/README.md`](alexa/README.md): serve solo un account Amazon Developer
   gratuito, niente AWS e niente server.
 - Fermate di sicurezza al rilascio, a schermo spento e in caso di disconnessione.

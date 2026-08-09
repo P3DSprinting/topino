@@ -1,6 +1,6 @@
 # Skill Alexa per il topino
 
-> **"Alexa, chiedi a topo robot di avviare la caccia"**
+> **"Alexa, chiedi a topo scattante di avviare la caccia"**
 
 ## Come funziona, in due righe
 
@@ -9,7 +9,7 @@ un comando testuale su un canale di `ntfy.sh`; l'app aperta e connessa al topino
 a casa lo riceve e lo esegue.
 
 ```
-"Alexa, chiedi a topo robot…"  →  skill (ospitata da Amazon)  →  ntfy.sh
+"Alexa, chiedi a topo scattante…"  →  skill (ospitata da Amazon)  →  ntfy.sh
                                                                ↓
                         topino  ←──BLE──  app aperta a casa (in ascolto)
 ```
@@ -47,7 +47,7 @@ Su **developer.amazon.com/alexa/console/ask**, accedi **con lo stesso account
 Amazon del tuo Echo** (se è diverso, l'Echo non vedrà mai la skill).
 
 1. **Create Skill**
-2. **Skill name**: `topo robot`
+2. **Skill name**: `topo scattante`
 3. **Primary locale / Default language**: **Italiano (IT)** — dev'essere la stessa
    lingua del tuo Echo
 4. **Choose a model**: **Custom**
@@ -89,7 +89,7 @@ const CANALE = 'topino-a3f9k2m8x1qz4b';
 
 Scheda **Test** in alto, e sposta il menù a tendina da *Off* a **Development**.
 
-Scrivi (o parla): `apri topo robot`, poi `avvia la caccia`.
+Scrivi (o parla): `apri topo scattante`, poi `avvia la caccia`.
 
 Se l'app a casa è in ascolto, compare un avviso `da Alexa: caccia:nervoso` e il
 topino parte.
@@ -103,13 +103,13 @@ modalità Development è già attiva su tutti i dispositivi del tuo account.
 
 | Frase | Effetto |
 |---|---|
-| «Alexa, chiedi a topo robot di avviare la caccia» | parte la caccia, andatura *nervoso* |
+| «Alexa, chiedi a topo scattante di avviare la caccia» | parte la caccia, andatura *nervoso* |
 | «…di avviare la caccia impazzita» | andatura più agitata |
 | «…caccia timida» | pause lunghe, scatti corti |
 | «…di giocare per cinque minuti» | **si ferma da sola dopo il tempo detto** |
-| «Alexa, chiedi a topo robot di fermarsi» | stop immediato |
+| «Alexa, chiedi a topo scattante di fermarsi» | stop immediato |
 | «…di andare piano» / «…di andare forte» | tetto di velocità al 30% / 100% |
-| «Alexa, apri topo robot» | apre la sessione: poi basta dire «avvia la caccia» |
+| «Alexa, apri topo scattante» | apre la sessione: poi basta dire «avvia la caccia» |
 
 Il modello riconosce una sessantina di formulazioni: *fai giocare il gatto*,
 *libera il topo*, *fai partire il topino*, *scappa*, *corri*, *fermalo*,
@@ -127,11 +127,11 @@ La soluzione sono le **Routine**, che ti fanno inventare la scorciatoia che vuoi
 1. App Alexa → **Altro** → **Routine** → **+**
 2. **Quando accade questo** → *Voce* → scrivi la frase che vuoi, es. `caccia al topo`
 3. **Aggiungi azione** → **Personalizzato** → scrivi
-   `chiedi a topo robot di avviare la caccia`
+   `chiedi a topo scattante di avviare la caccia`
 4. Salva.
 
 Da lì basta dire **«Alexa, caccia al topo»**. Fanne una seconda con `basta topo`
-→ `chiedi a topo robot di fermarsi` e hai anche lo stop in due parole.
+→ `chiedi a topo scattante di fermarsi` e hai anche lo stop in due parole.
 
 > In alternativa, il modo più semplice per non doverlo fermare è **dire quanto
 > deve durare fin dall'inizio**: «…di giocare per cinque minuti».
@@ -144,7 +144,27 @@ Da lì basta dire **«Alexa, caccia al topo»**. Fanne una seconda con `basta to
 | Alexa risponde bene ma il topino sta fermo | l'app a casa non è in ascolto, non è connessa, o è finita in secondo piano |
 | «Non conosco questa skill» | la skill non è in **Development**, o l'Echo usa un altro account Amazon |
 | Funziona da Test ma non dall'Echo | lingua della skill diversa da quella dell'Echo |
+| **Alexa risponde nominando un tuo dispositivo** | **conflitto di nome**: vedi qui sotto |
 | L'importazione da Git fallisce | usa la via manuale qui sotto |
+
+### Il nome di invocazione va scelto guardando casa tua
+
+Se Alexa risponde citando un tuo apparecchio («non ho trovato nessun dispositivo
+chiamato…»), sta dirottando la frase sulla domotica e non arriva mai alla skill.
+Succede quando il nome di invocazione contiene una parola che assomiglia a un
+dispositivo, a un gruppo o a una stanza che hai in casa.
+
+Il caso reale che ha motivato questo paragrafo: l'invocazione era `topo robot`, e
+in casa c'era un **aspirapolvere robot**. Alexa trovava quello e si fermava lì.
+
+Regole pratiche per il nome:
+
+- **due parole**, mai una sola (una parola comune viene quasi sempre scambiata
+  per un dispositivo);
+- **nessuna parola che compaia nei nomi dei tuoi dispositivi, gruppi o stanze** —
+  attenzione soprattutto a *robot*, *luce*, *presa*, *TV*, *casa*;
+- si cambia in trenta secondi: **Build → Invocation → Skill Invocation Name**,
+  poi **Save Model** e **Build Model**.
 
 ## Via manuale (se l'import da Git non va)
 
