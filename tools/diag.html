@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topino — Diagnostica BLE</title>
+<style>
+  :root {
+    --bg: #12141a; --panel: #1b1e27; --panel2: #232734; --line: #333949;
+    --fg: #e6e9f0; --dim: #8d94a8; --acc: #6ee7a8; --acc2: #7aa2ff;
+    --warn: #ffcc66; --bad: #ff6b6b;
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+  header { position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .grow { flex: 1; }
+
+  .banner { padding: 14px 16px; font-weight: 600; font-size: 15px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .banner.off { background: #3a1f22; color: #ffb4b4; }
+  .banner.on  { background: #123528; color: var(--acc); }
+  .banner.busy{ background: #3a3320; color: var(--warn); }
+
+  main { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px; padding: 14px; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  section.spot { border-color: var(--acc2); box-shadow: 0 0 0 1px rgba(122,162,255,.25); }
+  section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--dim); margin: 0 0 10px; font-weight: 600; }
+  .hint { color: var(--dim); font-size: 12px; margin: 8px 0 0; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+
+  button { font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 7px; cursor: pointer;
+    background: var(--panel2); color: var(--fg); border: 1px solid var(--line); }
+  button:hover:not(:disabled) { border-color: var(--acc2); }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  button.primary { background: var(--acc2); border-color: var(--acc2); color: #0b1020; font-weight: 600; }
+  button.danger  { background: var(--bad); border-color: var(--bad); color: #2a0505; font-weight: 700; }
+  button.on { background: var(--acc); border-color: var(--acc); color: #052015; font-weight: 600; }
+  button.huge { font-size: 17px; font-weight: 700; padding: 16px 22px; border-radius: 12px; }
+
+  input[type=number], input[type=text], select { font: inherit; font-family: var(--mono); font-size: 13px;
+    background: var(--panel2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+  input[type=range] { accent-color: var(--acc2); }
+  label { color: var(--dim); font-size: 12px; }
+
+  ol.steps { margin: 0 0 10px; padding-left: 20px; font-size: 13px; }
+  ol.steps li { margin-bottom: 7px; }
+  ol.steps b { color: var(--acc); }
+
+  #sweepNow { font-family: var(--mono); font-size: 13px; color: var(--warn); min-height: 20px; }
+  #sweepBar { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  #sweepBar > i { display: block; height: 100%; width: 0; background: var(--acc2); transition: width .2s; }
+
+  .dirgrid { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; justify-content: start; }
+  .dirgrid button { padding: 12px 0; font-family: var(--mono); font-size: 12px; }
+  .dirgrid .lbl { font-size: 10px; color: var(--dim); display: block; }
+
+  #log { font-family: var(--mono); font-size: 11.5px; line-height: 1.45;
+    background: #0d0f14; border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px; height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+  .t-tx { color: var(--acc2); } .t-rx { color: var(--acc); } .t-info { color: var(--dim); }
+  .t-warn { color: var(--warn); } .t-err { color: var(--bad); }
+  .t-q { color: var(--warn); font-weight: 600; } .t-win { color: var(--acc); font-weight: 700; }
+
+  #tree { font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; color: var(--dim);
+    max-height: 200px; overflow: auto; }
+  #tree b { color: var(--fg); }
+  .big { font-family: var(--mono); font-size: 22px; color: var(--acc); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐭 Topino — Diagnostica BLE</h1>
+  <button id="btnConnect" class="primary">Connetti</button>
+  <button id="btnDisconnect" disabled>Disconnetti</button>
+  <span class="grow"></span>
+  <button id="btnPanic" class="danger" disabled>■ STOP (Spazio)</button>
+</header>
+
+<div id="banner" class="banner off">⬤ NON CONNESSO — accendi il topino e premi «Connetti»</div>
+
+<main>
+<div style="display:flex; flex-direction:column; gap:14px; min-width:0;">
+
+  <section class="spot">
+    <h2>Ricerca automatica del comando che funziona</h2>
+    <ol class="steps">
+      <li>Assicurati che il topino sia <b>carico</b> (cavo USB, almeno 30 min) e <b>acceso</b>: il LED deve lampeggiare.</li>
+      <li>Mettilo su un pavimento liscio, <b>ruote a terra</b>, con spazio davanti.</li>
+      <li>Premi «Connetti» in alto e scegli <b>pets</b> dall'elenco.</li>
+      <li>Premi «Avvia ricerca»: proverò da solo ~15 varianti del protocollo, una ogni 3 secondi.</li>
+      <li>Appena il topino <b>si muove, ronza o fa qualsiasi cosa</b>, premi il pulsante verde grande (o la barra spaziatrice).</li>
+    </ol>
+    <div class="row">
+      <button id="btnSweep" class="primary huge" disabled>▶ Avvia ricerca automatica</button>
+      <button id="btnMoved" class="huge" disabled style="background:var(--acc); border-color:var(--acc); color:#052015;">✅ SI È MOSSO!</button>
+    </div>
+    <div id="sweepBar"><i></i></div>
+    <div id="sweepNow">—</div>
+    <p class="hint">Nessuna variante può danneggiare il topino: sono tutti comandi di movimento normali, cambia solo come sono impacchettati.</p>
+  </section>
+
+  <section>
+    <h2>Albero GATT del dispositivo</h2>
+    <div id="tree">— connetti per vederlo —</div>
+    <p class="hint">Attesi: nome <code>pets</code>, service <code>0xAE00</code>, write <code>0xAE01</code>, notify <code>0xAE02</code>.</p>
+  </section>
+
+  <section>
+    <h2>Prova manuale — direzioni</h2>
+    <div class="dirgrid">
+      <button data-dir="5"  disabled>5<span class="lbl">↖</span></button>
+      <button data-dir="1"  disabled>1<span class="lbl">↑</span></button>
+      <button data-dir="9"  disabled>9<span class="lbl">↗</span></button>
+      <button data-dir="4"  disabled>4<span class="lbl">←</span></button>
+      <button data-dir="0"  disabled>0<span class="lbl">stop</span></button>
+      <button data-dir="8"  disabled>8<span class="lbl">→</span></button>
+      <button data-dir="6"  disabled>6<span class="lbl">↙</span></button>
+      <button data-dir="2"  disabled>2<span class="lbl">↓</span></button>
+      <button data-dir="10" disabled>10<span class="lbl">↘</span></button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label>Modo</label>
+      <select id="dirMode">
+        <option value="hold" selected>tieni premuto (streaming) — consigliato</option>
+        <option value="latch">latch (un solo comando, non ferma)</option>
+        <option value="pulse">impulso (move + stop subito)</option>
+      </select>
+    </div>
+    <p class="hint"><b>Tieni premuto</b> il tasto: in modalità «impulso» il comando di stop parte un millisecondo dopo quello di marcia e il topino non fa in tempo a muoversi — è quasi certamente per questo che prima non succedeva niente.</p>
+  </section>
+
+</div>
+
+<div style="display:flex; flex-direction:column; gap:14px; min-width:0;">
+
+  <section>
+    <h2>Parametri</h2>
+    <div class="row">
+      <label>Velocità</label>
+      <input type="range" id="speed" min="0" max="32" value="28" style="width:180px">
+      <span id="speedVal" class="big">28</span>
+    </div>
+    <div class="row">
+      <label>Frequenza</label>
+      <input type="number" id="hz" value="20" min="1" max="50" style="width:70px"> Hz
+      <button id="btnUnlock" disabled>Rimanda UNLOCK</button>
+    </div>
+    <div class="row">
+      <label>Checksum</label>
+      <select id="chkMode">
+        <option value="sum">somma dir+speed (standard)</option>
+        <option value="zero">sempre 0x00</option>
+        <option value="ff">sempre 0xFF</option>
+      </select>
+      <label>Scrittura</label>
+      <select id="wMode">
+        <option value="resp">con risposta</option>
+        <option value="noresp">senza risposta</option>
+        <option value="auto">auto</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <h2>Latch / watchdog</h2>
+    <div class="row">
+      <button id="btnLatch" disabled>Manda 1 solo «avanti» e non fermarlo</button>
+      <span class="big" id="latchTimer">0.0 s</span>
+    </div>
+    <p class="hint">Serve a capire se il topino continua finché non gli dici stop, o se si ferma da solo dopo un tot.</p>
+  </section>
+
+  <section>
+    <h2>Rampa velocità</h2>
+    <div class="row">
+      <button id="btnRamp" disabled>Rampa 1 → 32 (1 s per step)</button>
+      <span class="big" id="rampVal">–</span>
+    </div>
+    <p class="hint">Dimmi a che numero <b>inizia a muoversi</b>.</p>
+  </section>
+
+  <section>
+    <h2>Invio manuale</h2>
+    <div class="row">
+      <input type="text" id="rawHex" value="5A 01 1C 00 1D A5" style="flex:1; min-width:200px">
+      <button id="btnRaw" disabled>Invia</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Log</h2>
+    <div id="log"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnCopy" class="primary">📋 Copia log per Claude</button>
+      <button id="btnClear">Pulisci</button>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   Protocollo di partenza (pinchies/WebBTLE_Mouse_Racer, stesso
+   produttore: Hangzhou Tianyuan Pet Products). Tutto da confermare
+   sull'esemplare Fressnapf/MORE.
+   ═══════════════════════════════════════════════════════════════ */
+const SVC_MAIN = 0xae00, CH_WRITE = 0xae01, CH_NOTIFY = 0xae02;
+const UNLOCK = [0x5a,0x5f,0x06,0xdb,0xb9,0x2e,0x28,0x4f,0xa5];
+const HEAD = 0x5a, TAIL = 0xa5;
+
+const OPTIONAL_SERVICES = [
+  SVC_MAIN, 0x1800, 0x1801, 0x180a, 0x180f, 0x1812,
+  0xffe0, 0xffe5, 0xfff0, 0xfff6, 0xffa0, 0xffb0,
+  0xffd0, 0xffd5, 0xff00, 0xfee7, 0xfe59,
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+];
+
+let device=null, server=null, chWrite=null, chNotify=null;
+let writableChars=[];           // tutte le characteristic scrivibili trovate
+let canNoResponse=false, writeBusy=false;
+
+const $ = id => document.getElementById(id);
+const hex = b => [...b].map(x=>x.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const uuid16 = n => '0000'+n.toString(16).padStart(4,'0')+'-0000-1000-8000-00805f9b34fb';
+const short = u => /^0000....-0000-1000-8000-00805f9b34fb$/.test(u) ? '0x'+u.slice(4,8).toUpperCase() : u;
+
+/* ── log ───────────────────────────────────────────────────── */
+const logEl=$('log'), logLines=[];
+function log(msg, cls='info'){
+  const line = `[${new Date().toLocaleTimeString('it-IT',{hour12:false})}] ${msg}`;
+  logLines.push(line);
+  const d=document.createElement('div'); d.className='t-'+cls; d.textContent=line;
+  logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight;
+}
+$('btnCopy').onclick = () => navigator.clipboard.writeText(logLines.join('\n'))
+  .then(()=>log('log copiato — incollalo in chat','ok'));
+$('btnClear').onclick = () => { logLines.length=0; logEl.textContent=''; };
+
+function banner(text, cls){ const b=$('banner'); b.textContent=text; b.className='banner '+cls; }
+
+/* ── connessione ───────────────────────────────────────────── */
+function setConnected(on){
+  $('btnConnect').disabled=on; $('btnDisconnect').disabled=!on; $('btnPanic').disabled=!on;
+  $('btnSweep').disabled=!on;
+  document.querySelectorAll('#btnUnlock,#btnLatch,#btnRamp,#btnRaw,.dirgrid button')
+    .forEach(b=>b.disabled=!on);
+}
+
+$('btnConnect').onclick = async () => {
+  if(!navigator.bluetooth){
+    log('Web Bluetooth assente. Serve Chrome/Edge e la pagina su http://localhost o https:// (file:// non funziona).','err');
+    banner('⬤ Browser non compatibile','off'); return;
+  }
+  try{
+    banner('⬤ scelta dispositivo…','busy');
+    device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true, optionalServices:OPTIONAL_SERVICES });
+    log(`dispositivo: nome="${device.name||'(senza nome)'}" id=${device.id}`,'info');
+    if(device.name!=='pets') log('⚠ il nome non è "pets": annotalo, potrebbe essere firmware diverso','warn');
+
+    device.addEventListener('gattserverdisconnected',()=>{
+      log('disconnesso','warn'); banner('⬤ NON CONNESSO — il dispositivo si è staccato','off');
+      setConnected(false); stopAll();
+    });
+
+    banner('⬤ connessione GATT…','busy');
+    server = await device.gatt.connect();
+    log('GATT connesso','ok');
+    await dumpGatt();
+
+    if(chWrite){
+      setConnected(true);
+      banner(`⬤ CONNESSO a "${device.name||'senza nome'}" — ora premi «Avvia ricerca automatica»`,'on');
+      await sendUnlock();
+    } else {
+      banner('⬤ connesso, ma nessuna characteristic scrivibile','off');
+      log('Nessun canale di scrittura. Copiami l\'albero GATT qui sopra.','err');
+    }
+  }catch(e){
+    log('connessione fallita: '+e.message,'err');
+    banner('⬤ NON CONNESSO — '+e.message,'off');
+  }
+};
+$('btnDisconnect').onclick = ()=>{ stopAll(); device?.gatt?.disconnect(); };
+
+async function dumpGatt(){
+  const tree=$('tree'); tree.innerHTML=''; writableChars=[]; chWrite=chNotify=null;
+  let services=[];
+  try{ services = await server.getPrimaryServices(); }
+  catch(e){ tree.textContent='service non leggibili: '+e.message; return; }
+  log(`trovati ${services.length} service`,'info');
+
+  for(const svc of services){
+    let line=`service ${short(svc.uuid)}\n`;
+    let chars=[];
+    try{ chars = await svc.getCharacteristics(); }catch{ line+='  (characteristic non leggibili)\n'; }
+    for(const ch of chars){
+      const p=ch.properties;
+      const props=['read','write','writeWithoutResponse','notify','indicate'].filter(k=>p[k]).join(',')||'—';
+      line+=`  char ${short(ch.uuid)}  [${props}]\n`;
+      if(p.write||p.writeWithoutResponse) writableChars.push(ch);
+      if(ch.uuid===uuid16(CH_NOTIFY)||(!chNotify&&(p.notify||p.indicate))) chNotify=ch;
+    }
+    const div=document.createElement('div');
+    div.innerHTML=line.replace(/service (\S+)/,'service <b>$1</b>');
+    tree.appendChild(div);
+  }
+
+  // preferisco 0xAE01, altrimenti la prima scrivibile che trovo
+  chWrite = writableChars.find(c=>c.uuid===uuid16(CH_WRITE)) || writableChars[0] || null;
+  if(chWrite){
+    canNoResponse = !!chWrite.properties.writeWithoutResponse;
+    log(`canale comandi: ${short(chWrite.uuid)} (${writableChars.length} scrivibili in totale)`,
+        chWrite.uuid===uuid16(CH_WRITE)?'ok':'warn');
+    if(chWrite.uuid!==uuid16(CH_WRITE)) log('⚠ non è 0xAE01 — la ricerca automatica proverà anche le altre','warn');
+  }
+  if(chNotify){
+    try{
+      await chNotify.startNotifications();
+      chNotify.addEventListener('characteristicvaluechanged',e=>
+        log('RX ← '+hex(new Uint8Array(e.target.value.buffer)),'rx'));
+      log(`notifiche attive su ${short(chNotify.uuid)}`,'ok');
+    }catch(e){ log('notifiche non attivabili: '+e.message,'warn'); }
+  }
+}
+
+/* ── invio ─────────────────────────────────────────────────── */
+async function send(bytes, tag='', ch=null, forceNoResp=null){
+  const target = ch || chWrite;
+  if(!target) return;
+  if(writeBusy) return;                 // GATT è seriale: mai accodare
+  writeBusy=true;
+  try{
+    const data=new Uint8Array(bytes);
+    const mode=$('wMode').value;
+    let noResp = forceNoResp!==null ? forceNoResp
+      : (mode==='noresp' || (mode==='auto' && canNoResponse));
+    if(noResp && target.properties.writeWithoutResponse) await target.writeValueWithoutResponse(data);
+    else if(target.properties.write) await target.writeValue(data);
+    else await target.writeValueWithoutResponse(data);
+    log(`TX → ${hex(data)}${tag?'   '+tag:''}`,'tx');
+  }catch(e){ log('write fallita: '+e.message,'err'); }
+  finally{ writeBusy=false; }
+}
+
+function chk(dir,speed){
+  switch($('chkMode').value){ case 'zero':return 0; case 'ff':return 0xff; default:return (dir+speed)&0xff; }
+}
+const movePkt = (d,s,c=null)=>[HEAD,d&0xff,s&0xff,0x00,c===null?chk(d,s):c,TAIL];
+const stopPkt = ()=>[HEAD,0,0,0,0,TAIL];
+
+const sendUnlock = ()=>{ log('— UNLOCK —','info'); return send(UNLOCK,'(unlock)'); };
+$('btnUnlock').onclick = sendUnlock;
+$('speed').oninput = ()=> $('speedVal').textContent=$('speed').value;
+const getSpeed = ()=>+$('speed').value;
+
+async function panic(){ stopAll(); await send(stopPkt(),'(STOP)'); log('STOP','warn'); }
+$('btnPanic').onclick = panic;
+
+/* ═══ RICERCA AUTOMATICA ════════════════════════════════════════
+   Provo le varianti plausibili una dopo l'altra. L'utente guarda il
+   topino e preme un solo tasto quando succede qualcosa: così non deve
+   capire niente del protocollo e io isolo la combinazione giusta. */
+
+function buildVariants(){
+  const v=[];
+  const chList = writableChars.length ? writableChars : [chWrite];
+  const primary = chWrite;
+
+  // Le più probabili per prime, sul canale che ci aspettiamo.
+  v.push({n:'streaming 20Hz, velocità 32, con risposta',      ch:primary, unlock:true,  stream:true,  dir:1, sp:32, noResp:false});
+  v.push({n:'streaming 20Hz, velocità 32, senza risposta',    ch:primary, unlock:true,  stream:true,  dir:1, sp:32, noResp:true});
+  v.push({n:'comando singolo (latch), velocità 32',           ch:primary, unlock:true,  stream:false, dir:1, sp:32, noResp:false});
+  v.push({n:'streaming SENZA unlock, velocità 32',            ch:primary, unlock:false, stream:true,  dir:1, sp:32, noResp:false});
+  v.push({n:'streaming, velocità 16 (media)',                 ch:primary, unlock:true,  stream:true,  dir:1, sp:16, noResp:false});
+  v.push({n:'streaming, checksum azzerato',                   ch:primary, unlock:true,  stream:true,  dir:1, sp:32, noResp:false, chk:0});
+  v.push({n:'streaming, indietro (dir=2)',                    ch:primary, unlock:true,  stream:true,  dir:2, sp:32, noResp:false});
+  v.push({n:'streaming, destra (dir=8)',                      ch:primary, unlock:true,  stream:true,  dir:8, sp:32, noResp:false});
+  v.push({n:'streaming, sinistra (dir=4)',                    ch:primary, unlock:true,  stream:true,  dir:4, sp:32, noResp:false});
+  v.push({n:'impulsi move+stop a 3 Hz',                       ch:primary, unlock:true,  pulse:true,   dir:1, sp:32, noResp:false});
+  v.push({n:'streaming, velocità 8 (bassa)',                  ch:primary, unlock:true,  stream:true,  dir:1, sp:8,  noResp:false});
+  v.push({n:'unlock ripetuto + streaming',                    ch:primary, unlock:'each',stream:true,  dir:1, sp:32, noResp:false});
+
+  // Se il device espone altri canali scrivibili, provo anche quelli.
+  for(const ch of chList){
+    if(ch===primary) continue;
+    v.push({n:`streaming su canale alternativo ${short(ch.uuid)}`, ch, unlock:true, stream:true, dir:1, sp:32, noResp:false});
+  }
+  return v;
+}
+
+let sweeping=false, sweepAbort=null, sweepCurrent=null;
+
+$('btnSweep').onclick = async () => {
+  if(sweeping){ sweepAbort=true; return; }
+  const variants = buildVariants();
+  sweeping=true; sweepAbort=false;
+  $('btnSweep').textContent='■ Ferma ricerca'; $('btnMoved').disabled=false;
+  log(`══ RICERCA AUTOMATICA: ${variants.length} varianti da provare ══`,'warn');
+  banner('⬤ RICERCA IN CORSO — guarda il topino, premi il tasto verde appena fa qualcosa','busy');
+
+  for(let i=0;i<variants.length && !sweepAbort;i++){
+    const V = variants[i];
+    sweepCurrent = V;
+    $('sweepBar').firstElementChild.style.width = ((i+1)/variants.length*100)+'%';
+    $('sweepNow').textContent = `variante ${i+1}/${variants.length}: ${V.n}`;
+    log(`▸ variante ${i+1}/${variants.length}: ${V.n}`,'warn');
+
+    if(V.unlock===true || V.unlock==='each') await send(UNLOCK,'(unlock)',V.ch,V.noResp);
+
+    const pkt = ()=>movePkt(V.dir,V.sp,V.chk);
+    const t0=Date.now();
+    if(V.stream){
+      while(Date.now()-t0<3000 && !sweepAbort){
+        if(V.unlock==='each' && (Date.now()-t0)%1000<60) await send(UNLOCK,'',V.ch,V.noResp);
+        await send(pkt(),'',V.ch,V.noResp);
+        await sleep(50);
+      }
+    } else if(V.pulse){
+      while(Date.now()-t0<3000 && !sweepAbort){
+        await send(pkt(),'',V.ch,V.noResp);
+        await sleep(180);
+        await send(stopPkt(),'',V.ch,V.noResp);
+        await sleep(150);
+      }
+    } else {
+      await send(pkt(),'(latch)',V.ch,V.noResp);
+      await sleep(3000);
+    }
+
+    await send(stopPkt(),'(stop fra varianti)',V.ch,V.noResp);
+    await sleep(700);
+  }
+
+  sweeping=false; sweepCurrent=null;
+  $('btnSweep').textContent='▶ Avvia ricerca automatica'; $('btnMoved').disabled=true;
+  $('sweepNow').textContent='—';
+  if(!sweepAbort){
+    log('══ ricerca finita: nessuna variante segnalata ══','err');
+    banner('⬤ Ricerca finita senza risultato — copiami il log','off');
+  } else {
+    banner('⬤ ricerca interrotta','busy');
+  }
+};
+
+function itMoved(){
+  if(!sweepCurrent){ log('(nessuna variante in corso)','warn'); return; }
+  const V=sweepCurrent;
+  log('🎯 FUNZIONA QUESTA → '+V.n,'win');
+  log(`   canale=${short(V.ch.uuid)} unlock=${V.unlock} stream=${!!V.stream} pulse=${!!V.pulse} dir=${V.dir} speed=${V.sp} senzaRisposta=${V.noResp} checksum=${V.chk===undefined?'somma':V.chk}`,'win');
+  banner('🎯 TROVATA! — '+V.n+' · copiami il log','on');
+  sweepAbort=true;
+}
+$('btnMoved').onclick = itMoved;
+
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){
+    e.preventDefault();
+    if(sweeping) itMoved(); else panic();
+  }
+});
+
+/* ── prove manuali ─────────────────────────────────────────── */
+let holdLoop=null;
+document.querySelectorAll('.dirgrid button').forEach(btn=>{
+  const dir=+btn.dataset.dir;
+  btn.addEventListener('pointerdown',async ()=>{
+    const sp=getSpeed(), mode=$('dirMode').value;
+    if(mode==='hold'){
+      btn.classList.add('on');
+      log(`— TIENI PREMUTO dir=${dir} speed=${sp} —`,'info');
+      await send(movePkt(dir,sp));
+      holdLoop=setInterval(()=>send(movePkt(dir,sp)), Math.round(1000/+$('hz').value));
+    } else if(mode==='latch'){
+      log(`— LATCH dir=${dir} speed=${sp} —`,'info');
+      await send(movePkt(dir,sp));
+    } else {
+      log(`— IMPULSO dir=${dir} speed=${sp} —`,'info');
+      await send(movePkt(dir,sp)); await sleep(250); await send(stopPkt());
+    }
+  });
+  const release=async()=>{
+    if(!holdLoop) return;
+    clearInterval(holdLoop); holdLoop=null; btn.classList.remove('on');
+    await send(stopPkt());
+  };
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,release));
+});
+
+let latchTimer=null;
+$('btnLatch').onclick = async ()=>{
+  await send(movePkt(1,getSpeed()),'(latch: nessuno stop dopo)');
+  log('❓ cronometra quanti secondi va avanti prima di fermarsi da solo','q');
+  const t0=performance.now();
+  clearInterval(latchTimer);
+  latchTimer=setInterval(()=>$('latchTimer').textContent=((performance.now()-t0)/1000).toFixed(1)+' s',100);
+};
+
+let rampLoop=null;
+$('btnRamp').onclick = async ()=>{
+  if(rampLoop){ clearInterval(rampLoop); rampLoop=null; $('btnRamp').textContent='Rampa 1 → 32 (1 s per step)'; await panic(); return; }
+  let v=1;
+  log('— RAMPA —','info'); log('❓ a che numero inizia a muoversi?','q');
+  $('btnRamp').textContent='■ Ferma rampa';
+  const step=async()=>{
+    if(v>32){ clearInterval(rampLoop); rampLoop=null; $('btnRamp').textContent='Rampa 1 → 32 (1 s per step)'; await panic(); return; }
+    $('rampVal').textContent=v;
+    await send(movePkt(1,v),`(v=${v})`);
+    v++;
+  };
+  await step(); rampLoop=setInterval(step,1000);
+};
+
+$('btnRaw').onclick = ()=>{
+  const bytes=$('rawHex').value.trim().split(/[\s,]+/).filter(Boolean).map(s=>parseInt(s,16));
+  if(bytes.some(isNaN)){ log('esadecimale non valido','err'); return; }
+  send(bytes,'(manuale)');
+};
+
+function stopAll(){
+  [holdLoop,rampLoop,latchTimer].forEach(t=>t&&clearInterval(t));
+  holdLoop=rampLoop=latchTimer=null;
+  sweepAbort=true;
+  document.querySelectorAll('.dirgrid button').forEach(b=>b.classList.remove('on'));
+}
+
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&chWrite) panic(); });
+
+log('pronto. Carica e accendi il topino, poi premi «Connetti».','info');
+</script>
+</body>
+</html>

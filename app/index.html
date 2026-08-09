@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0e1116">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Topino</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── schermata di avvio ────────────────────────────────────── -->
+<div id="splash" class="screen">
+  <div class="splash-card">
+    <div class="mouse-mark" aria-hidden="true">
+      <svg viewBox="0 0 120 70" width="132" height="77">
+        <ellipse cx="52" cy="42" rx="34" ry="20" fill="currentColor" opacity=".92"/>
+        <circle cx="30" cy="26" r="13" fill="currentColor" opacity=".55"/>
+        <circle cx="78" cy="26" r="10" fill="currentColor" opacity=".55"/>
+        <circle cx="22" cy="40" r="3.2" fill="#0e1116"/>
+        <path d="M86 46 q26 4 30 -14" stroke="currentColor" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".7"/>
+        <circle cx="38" cy="60" r="6" fill="currentColor" opacity=".35"/>
+        <circle cx="66" cy="60" r="6" fill="currentColor" opacity=".35"/>
+      </svg>
+    </div>
+    <h1>Topino</h1>
+    <p class="sub">Controllo analogico per MORE Mouse Racer</p>
+
+    <button id="btnConnect" class="cta">Connetti il topino</button>
+    <p id="splashMsg" class="msg"></p>
+
+    <details class="help">
+      <summary>Non si connette?</summary>
+      <ul>
+        <li>Accendi il topino con l'interruttore sotto la pancia: il LED deve <b>lampeggiare</b>.</li>
+        <li>Su Android serve il Bluetooth <b>e la posizione</b> attivi (lo impone Android, non l'app).</li>
+        <li>Nell'elenco cerca il dispositivo chiamato <b>pets</b>.</li>
+        <li>Se l'app ufficiale è aperta, chiudila: tiene la connessione occupata.</li>
+      </ul>
+      <button id="btnAnyDevice" class="ghost">Mostra tutti i dispositivi</button>
+    </details>
+  </div>
+</div>
+
+<!-- ── plancia di guida ──────────────────────────────────────── -->
+<div id="hud" class="screen hidden">
+
+  <header class="topbar">
+    <span id="dot" class="dot"></span>
+    <span id="state">connesso</span>
+    <span class="grow"></span>
+    <span id="readout" class="readout">—</span>
+    <button id="btnMenu" class="icon-btn" aria-label="Impostazioni">⚙</button>
+  </header>
+
+  <!-- metà sinistra: il pollice atterra dove vuole e il joystick nasce lì sotto -->
+  <div id="stickZone" class="stick-zone">
+    <div id="stickBase" class="stick-base">
+      <div class="stick-ring"></div>
+      <div class="stick-cross"></div>
+      <div id="stickKnob" class="stick-knob"></div>
+    </div>
+    <p id="stickHint" class="stick-hint">appoggia il pollice qui</p>
+  </div>
+
+  <!-- lato destro: comandi raggiungibili senza spostare la mano -->
+  <div class="right-rail">
+    <div class="cap">
+      <span class="cap-label">MAX</span>
+      <input id="speedCap" class="cap-slider" type="range" min="10" max="100" value="55"
+             orient="vertical" aria-label="Limite di velocità">
+      <span id="capVal" class="cap-val">55%</span>
+    </div>
+
+    <button id="btnBoost" class="boost">BOOST</button>
+    <button id="btnHunt" class="hunt">🐾 CACCIA</button>
+  </div>
+
+  <button id="btnStop" class="estop" aria-label="Stop">■</button>
+</div>
+
+<!-- ── impostazioni ──────────────────────────────────────────── -->
+<div id="sheet" class="sheet hidden">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <h2>Impostazioni</h2>
+      <button id="btnCloseSheet" class="icon-btn">✕</button>
+    </div>
+
+    <label class="field">
+      <span>Curve fluide <small>alterna direzioni adiacenti invece di scattare fra 8 settori</small></span>
+      <input id="optBlend" type="checkbox" checked>
+    </label>
+
+    <label class="field">
+      <span>Inverti avanti/indietro <small>se il topino ti sembra guidare al contrario</small></span>
+      <input id="optInvert" type="checkbox">
+    </label>
+
+    <label class="field range">
+      <span>Zona morta <small id="dzVal">12%</small></span>
+      <input id="optDeadzone" type="range" min="0" max="35" value="12">
+    </label>
+
+    <label class="field range">
+      <span>Velocità minima <small id="msVal">2</small><small> sotto questo valore i motori non girano</small></span>
+      <input id="optMinSpeed" type="range" min="0" max="20" value="2">
+    </label>
+
+    <label class="field range">
+      <span>Frequenza invio <small id="hzVal">20 Hz</small></span>
+      <input id="optHz" type="range" min="5" max="30" value="20">
+    </label>
+
+    <div class="field col">
+      <span>Modalità caccia</span>
+      <div class="segmented" id="huntProfile">
+        <button data-profile="timido">Timido</button>
+        <button data-profile="nervoso" class="on">Nervoso</button>
+        <button data-profile="impazzito">Impazzito</button>
+      </div>
+    </div>
+
+    <div class="stats" id="stats">—</div>
+
+    <button id="btnDisconnect" class="ghost wide">Disconnetti</button>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

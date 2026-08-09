@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topino — Calibrazione</title>
+<style>
+  :root { --bg:#12141a; --panel:#1b1e27; --panel2:#232734; --line:#333949;
+    --fg:#e6e9f0; --dim:#8d94a8; --acc:#6ee7a8; --acc2:#7aa2ff; --warn:#ffcc66; --bad:#ff6b6b;
+    --mono: ui-monospace,"Cascadia Code",Consolas,monospace; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex; flex-direction:column; align-items:center; padding:24px 16px 60px; }
+  .wrap { width:min(700px,100%); }
+
+  h1 { font-size:19px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13.5px; margin:0 0 20px; }
+
+  .bar { display:flex; gap:5px; margin-bottom:22px; }
+  .bar i { flex:1; height:5px; border-radius:3px; background:var(--panel2); }
+  .bar i.done { background:var(--acc); }
+  .bar i.now { background:var(--acc2); }
+
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; }
+  .step-n { font:600 11px/1 inherit; letter-spacing:1.2px; text-transform:uppercase; color:var(--acc2); }
+  h2 { font-size:18px; margin:8px 0 10px; }
+  p { margin:0 0 14px; color:var(--dim); font-size:14px; }
+  p b, li b { color:var(--fg); }
+
+  button { font:inherit; cursor:pointer; border-radius:10px;
+    background:var(--panel2); color:var(--fg); border:1px solid var(--line); padding:13px 16px; font-size:14px; }
+  button:hover:not(:disabled) { border-color:var(--acc2); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .primary { background:var(--acc2); border-color:var(--acc2); color:#0b1020; font-weight:600; }
+  .go { background:var(--acc); border-color:var(--acc); color:#052015; font-weight:700; font-size:16px; padding:16px 22px; }
+  .danger { background:var(--bad); border-color:var(--bad); color:#2a0505; font-weight:700; }
+
+  .answers { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:16px; }
+  @media (max-width:520px){ .answers { grid-template-columns:1fr; } }
+  .answers button { text-align:left; padding:15px 16px; }
+  .answers button span { display:block; font-size:12px; color:var(--dim); margin-top:3px; }
+
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .big { font-family:var(--mono); font-size:44px; color:var(--acc); line-height:1; }
+  .status { margin-top:14px; font-family:var(--mono); font-size:12px; color:var(--dim); min-height:18px; }
+  .warnbox { background:#3a2a1a; border:1px solid #6b5326; color:var(--warn);
+    border-radius:10px; padding:12px 14px; font-size:13px; margin-bottom:16px; }
+
+  pre { background:#0d0f14; border:1px solid var(--line); border-radius:10px; padding:14px;
+    font-family:var(--mono); font-size:12px; white-space:pre-wrap; word-break:break-word; color:var(--acc); }
+  .hidden { display:none !important; }
+  .estop { position:fixed; right:18px; bottom:18px; z-index:5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐭 Calibrazione del topino</h1>
+  <p class="sub">Sei domande. Io mando i comandi, tu guardi il topino e premi la risposta.</p>
+
+  <div class="bar" id="bar"></div>
+  <div id="card" class="card"></div>
+</div>
+
+<button class="danger estop" id="estop">■ STOP</button>
+
+<script>
+const SVC=0xae00, CHW=0xae01;
+const UNLOCK=[0x5a,0x5f,0x06,0xdb,0xb9,0x2e,0x28,0x4f,0xa5];
+const HEAD=0x5a, TAIL=0xa5;
+
+let chWrite=null, device=null, loop=null;
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const move=(d,s)=>[HEAD,d,s,0,(d+s)&0xff,TAIL];
+const stopPkt=()=>[HEAD,0,0,0,0,TAIL];
+
+let busy=false;
+async function tx(bytes){
+  if(!chWrite||busy) return;
+  busy=true;
+  try{
+    const d=new Uint8Array(bytes);
+    if(chWrite.properties.write) await chWrite.writeValue(d);
+    else await chWrite.writeValueWithoutResponse(d);
+  }catch(e){ console.warn(e); }
+  finally{ busy=false; }
+}
+function halt(){ clearInterval(loop); loop=null; tx(stopPkt()); setTimeout(()=>tx(stopPkt()),80); }
+$('estop').onclick=halt;
+
+/** Tiene il comando attivo per `ms` ripetendolo: un colpo solo potrebbe non bastare. */
+async function drive(dir, speed, ms){
+  clearInterval(loop);
+  await tx(move(dir,speed));
+  loop=setInterval(()=>tx(move(dir,speed)),50);
+  await sleep(ms);
+  halt();
+}
+
+/* ── risultati ─────────────────────────────────────────────── */
+const R = { dirs:{}, latch:null, minSpeed:null, device:null };
+
+/* ── passi ─────────────────────────────────────────────────── */
+const DIR_ANSWERS = [
+  ['avanti',   'È andato AVANTI',        'si è allontanato da te, muso in testa'],
+  ['indietro', 'È andato INDIETRO',      'è tornato verso di te, coda in testa'],
+  ['sinistra', 'Ha girato a SINISTRA',   'ha curvato o ruotato verso sinistra'],
+  ['destra',   'Ha girato a DESTRA',     'ha curvato o ruotato verso destra'],
+  ['fermo',    'Non ha fatto nulla',     'immobile, nessun rumore di motore'],
+];
+
+const steps = [
+
+  /* 0 — connessione */
+  () => ({
+    n:'passo 1 di 6', h:'Colleghiamoci al topino',
+    body:`<p>Metti il topino <b>per terra</b>, ruote a contatto, con almeno mezzo metro libero davanti e attorno.
+          Se resta in mano le ruote girano a vuoto e le risposte non valgono.</p>
+          <div class="warnbox">Se hai l'app ufficiale aperta sul telefono, chiudila: tiene il topino occupato.</div>
+          <div class="row"><button class="go" id="btnConn">Connetti il topino</button></div>
+          <div class="status" id="st"></div>`,
+    init(){
+      $('btnConn').onclick=async()=>{
+        const st=$('st');
+        try{
+          st.textContent='scelta dispositivo…';
+          device=await navigator.bluetooth.requestDevice({filters:[{name:'pets'}],optionalServices:[SVC]})
+            .catch(()=>navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]}));
+          st.textContent='connessione…';
+          const srv=await device.gatt.connect();
+          chWrite=await (await srv.getPrimaryService(SVC)).getCharacteristic(CHW);
+          R.device=device.name||'(senza nome)';
+          await tx(UNLOCK);
+          st.textContent='connesso a '+R.device;
+          next();
+        }catch(e){ st.textContent='errore: '+e.message; }
+      };
+    }
+  }),
+
+  /* 1-4 — mappa delle direzioni */
+  ...[[1,'1'],[2,'2'],[4,'4'],[8,'8']].map(([dir,label],i)=>()=>({
+    n:`passo ${i+2} di 6`, h:`Cosa fa il comando "${label}"?`,
+    body:`<p>Premi <b>PROVA</b>: mando il comando <code>${label}</code> per 2 secondi a velocità media.
+          Guarda il topino e dimmi cosa ha fatto. Puoi ripetere quante volte vuoi.</p>
+          <div class="row"><button class="go" id="btnTry">▶ PROVA</button>
+          <span class="status" id="st"></span></div>
+          <div class="answers">${DIR_ANSWERS.map(([k,t,d])=>
+            `<button data-k="${k}">${t}<span>${d}</span></button>`).join('')}</div>`,
+    init(){
+      $('btnTry').onclick=async()=>{
+        $('st').textContent='in movimento…';
+        await drive(dir,22,2000);
+        $('st').textContent='fatto — scegli la risposta';
+      };
+      document.querySelectorAll('.answers button').forEach(b=>b.onclick=()=>{
+        R.dirs[dir]=b.dataset.k; next();
+      });
+    }
+  })),
+
+  /* 5 — latch o watchdog */
+  () => ({
+    n:'passo 6 di 6', h:'Continua da solo o si ferma?',
+    body:`<p>Ora mando <b>un solo comando</b> di marcia e poi <b>non gli dico più niente</b>.
+          Serve a sapere se devo ripetere il comando in continuazione o basta mandarlo una volta.</p>
+          <p>Premi PROVA e guarda: si ferma da solo dopo poco, oppure continua finché non premi STOP?</p>
+          <div class="row"><button class="go" id="btnTry">▶ PROVA</button>
+          <span class="big" id="t">0.0</span><span class="status">secondi</span></div>
+          <div class="answers">
+            <button data-k="stop-subito">Si è fermato subito<span>meno di mezzo secondo</span></button>
+            <button data-k="watchdog">Si è fermato da solo<span>dopo circa 1-3 secondi</span></button>
+            <button data-k="latch">Ha continuato all'infinito<span>finché non ho premuto STOP</span></button>
+          </div>`,
+    init(){
+      let t0=0,tm=null;
+      $('btnTry').onclick=async()=>{
+        clearInterval(loop); loop=null;
+        await tx(UNLOCK); await tx(move(1,22));      // un colpo solo, nessuna ripetizione
+        t0=performance.now(); clearInterval(tm);
+        tm=setInterval(()=>$('t').textContent=((performance.now()-t0)/1000).toFixed(1),100);
+      };
+      document.querySelectorAll('.answers button').forEach(b=>b.onclick=()=>{
+        clearInterval(tm); halt(); R.latch=b.dataset.k; next();
+      });
+    }
+  }),
+
+  /* 6 — soglia minima di velocità */
+  () => ({
+    n:'ultima domanda', h:'Da che velocità parte?',
+    body:`<p>Faccio salire la velocità da 1 in su, un gradino al secondo.
+          Premi <b>ORA SI MUOVE</b> nell'istante in cui le ruote iniziano a girare.
+          Mi serve per non sprecare metà corsa del joystick in valori che non fanno nulla.</p>
+          <div class="row"><button class="go" id="btnTry">▶ AVVIA RAMPA</button>
+          <span class="big" id="v">–</span></div>
+          <div class="answers"><button id="btnNow" disabled>ORA SI MUOVE<span>premilo appena parte</span></button>
+          <button id="btnSkip">Salta<span>uso il valore predefinito 6</span></button></div>`,
+    init(){
+      let v=0,tm=null;
+      $('btnTry').onclick=async()=>{
+        v=1; $('btnNow').disabled=false;
+        await tx(UNLOCK);
+        clearInterval(tm);
+        const step=async()=>{
+          if(v>32){ clearInterval(tm); halt(); $('v').textContent='–'; $('btnNow').disabled=true; return; }
+          $('v').textContent=v;
+          clearInterval(loop);
+          await tx(move(1,v));
+          loop=setInterval(()=>tx(move(1,v)),60);
+          v++;
+        };
+        await step(); tm=setInterval(step,1000);
+      };
+      $('btnNow').onclick=()=>{ clearInterval(tm); halt(); R.minSpeed=+$('v').textContent||6; next(); };
+      $('btnSkip').onclick=()=>{ clearInterval(tm); halt(); R.minSpeed=6; next(); };
+    }
+  }),
+
+  /* 7 — riepilogo */
+  () => {
+    const NOMI={avanti:'avanti',indietro:'indietro',sinistra:'sinistra',destra:'destra',fermo:'NIENTE'};
+    const righe=Object.entries(R.dirs).map(([d,k])=>`  comando ${d.padEnd(2)} → ${NOMI[k]}`).join('\n');
+    const testo=
+`RISULTATI CALIBRAZIONE TOPINO
+dispositivo: ${R.device}
+direzioni:
+${righe}
+comportamento: ${R.latch}
+velocita minima: ${R.minSpeed}`;
+    return {
+      n:'fatto', h:'Calibrazione completata',
+      body:`<p>Copia questo e incollamelo in chat: ci taro il joystick.</p>
+            <pre id="out">${testo}</pre>
+            <div class="row"><button class="primary" id="btnCopy">📋 Copia</button>
+            <button id="btnAgain">Rifai da capo</button></div>`,
+      init(){
+        try{ localStorage.setItem('topino.calib.v1', JSON.stringify(R)); }catch{}
+        $('btnCopy').onclick=()=>navigator.clipboard.writeText(testo)
+          .then(()=>$('btnCopy').textContent='✓ copiato');
+        $('btnAgain').onclick=()=>{ i=1; render(); };
+      }
+    };
+  },
+];
+
+/* ── motore del wizard ─────────────────────────────────────── */
+let i=0;
+function next(){ i++; render(); }
+function render(){
+  const s=steps[i]();
+  $('card').innerHTML=`<div class="step-n">${s.n}</div><h2>${s.h}</h2>${s.body}`;
+  $('bar').innerHTML=steps.map((_,k)=>
+    `<i class="${k<i?'done':k===i?'now':''}"></i>`).join('');
+  s.init?.();
+}
+
+if(!navigator.bluetooth){
+  $('card').innerHTML='<h2>Browser non compatibile</h2><p>Serve Chrome o Edge, e la pagina deve stare su <b>http://localhost</b> o https.</p>';
+} else render();
+
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) halt(); });
+</script>
+</body>
+</html>

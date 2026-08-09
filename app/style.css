@@ -1,0 +1,229 @@
+/* Topino — plancia di guida.
+   Pensata per essere usata al buio, in orizzontale, con i pollici ai bordi
+   e lo sguardo sul gatto invece che sullo schermo: niente elementi piccoli,
+   niente colori chiari che accecano, feedback leggibile con la coda dell'occhio. */
+
+:root {
+  --bg: #0e1116;
+  --bg2: #151a22;
+  --panel: #1a212c;
+  --line: #2a3342;
+  --fg: #e8edf5;
+  --dim: #8794a8;
+  --acc: #5ff2a0;      /* connesso / attivo */
+  --boost: #ffb347;    /* turbo */
+  --stop: #ff5f5f;     /* emergenza */
+  --hunt: #b98cff;     /* modalità caccia */
+  --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --pad: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  user-select: none; -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+body { background: radial-gradient(120% 90% at 50% 0%, #182030 0%, var(--bg) 60%); }
+
+.screen { position: fixed; inset: 0; }
+.hidden { display: none !important; }
+.grow { flex: 1; }
+
+/* ── splash ────────────────────────────────────────────────── */
+#splash { display: grid; place-items: center; padding: 24px; overflow-y: auto; }
+.splash-card { width: min(420px, 100%); text-align: center; }
+.mouse-mark { color: var(--acc); filter: drop-shadow(0 6px 24px rgba(95,242,160,.25)); }
+.splash-card h1 { font-size: 30px; margin: 12px 0 4px; letter-spacing: -.5px; }
+.sub { color: var(--dim); margin: 0 0 26px; font-size: 14px; }
+
+.cta {
+  width: 100%; padding: 17px; font: 600 17px/1 inherit; letter-spacing: .2px;
+  color: #06170f; background: var(--acc); border: 0; border-radius: 14px; cursor: pointer;
+  box-shadow: 0 8px 26px rgba(95,242,160,.22);
+}
+.cta:active { transform: translateY(1px); }
+.cta:disabled { opacity: .5; box-shadow: none; }
+
+.msg { min-height: 20px; margin: 12px 0 0; font-size: 13px; color: var(--dim); }
+.msg.err { color: var(--stop); }
+.msg.ok { color: var(--acc); }
+
+.help { margin-top: 26px; text-align: left; color: var(--dim); font-size: 13px; }
+.help summary { cursor: pointer; padding: 8px 0; color: var(--acc); }
+.help ul { margin: 6px 0 12px; padding-left: 20px; }
+.help li { margin-bottom: 6px; }
+.help b { color: var(--fg); }
+
+.ghost {
+  font: inherit; font-size: 14px; padding: 11px 16px; cursor: pointer;
+  background: transparent; color: var(--fg);
+  border: 1px solid var(--line); border-radius: 11px;
+}
+.ghost.wide { width: 100%; margin-top: 8px; }
+
+/* ── barra di stato ────────────────────────────────────────── */
+.topbar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: center; gap: 9px;
+  padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+  font-size: 12.5px; color: var(--dim);
+  background: linear-gradient(180deg, rgba(14,17,22,.92), transparent);
+  pointer-events: none;
+}
+.topbar .icon-btn { pointer-events: auto; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dim); flex: none; }
+.dot.ok { background: var(--acc); box-shadow: 0 0 10px var(--acc); }
+.dot.warn { background: var(--boost); animation: pulse 1s infinite; }
+.dot.err { background: var(--stop); }
+@keyframes pulse { 50% { opacity: .25; } }
+
+.readout { font-family: var(--mono); font-size: 12px; color: var(--dim); letter-spacing: .5px; }
+
+.icon-btn {
+  font-size: 17px; line-height: 1; padding: 7px 10px; cursor: pointer;
+  background: transparent; color: var(--dim); border: 1px solid var(--line); border-radius: 9px;
+}
+
+/* ── joystick ──────────────────────────────────────────────── */
+.stick-zone {
+  position: absolute; top: 0; bottom: 0; left: 0; right: 118px;
+  touch-action: none;
+}
+.stick-hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  color: #3f4a5c; font-size: 13px; letter-spacing: .4px; margin: 0;
+  transition: opacity .2s;
+}
+.stick-zone.active .stick-hint { opacity: 0; }
+
+.stick-base {
+  position: absolute; width: 240px; height: 240px; margin: -120px 0 0 -120px;
+  opacity: 0; transition: opacity .14s;
+  pointer-events: none;
+}
+.stick-zone.active .stick-base { opacity: 1; }
+
+.stick-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid rgba(95,242,160,.22);
+  background: radial-gradient(circle, rgba(95,242,160,.07), transparent 68%);
+}
+/* mirino: aiuta a sentire dove sono gli assi puri senza doverli guardare */
+.stick-cross {
+  position: absolute; inset: 26%; border-radius: 50%;
+  border: 1px dashed rgba(95,242,160,.16);
+}
+.stick-knob {
+  position: absolute; left: 50%; top: 50%; width: 92px; height: 92px;
+  margin: -46px 0 0 -46px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #7ffcb6, var(--acc) 62%, #2fae72);
+  box-shadow: 0 6px 22px rgba(95,242,160,.4), inset 0 -3px 10px rgba(0,0,0,.28);
+}
+.stick-zone.boosting .stick-knob {
+  background: radial-gradient(circle at 34% 30%, #ffd79a, var(--boost) 62%, #d1801f);
+  box-shadow: 0 6px 26px rgba(255,179,71,.5), inset 0 -3px 10px rgba(0,0,0,.28);
+}
+.stick-zone.boosting .stick-ring { border-color: rgba(255,179,71,.3); }
+
+/* ── colonna comandi ───────────────────────────────────────── */
+.right-rail {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 118px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; padding: 58px 12px calc(12px + var(--pad));
+  background: linear-gradient(90deg, transparent, rgba(21,26,34,.55));
+}
+
+.cap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 0; }
+.cap-label, .cap-val { font-family: var(--mono); font-size: 11px; color: var(--dim); letter-spacing: .6px; }
+.cap-val { color: var(--acc); font-size: 13px; }
+.cap-slider {
+  flex: 1; width: 40px; min-height: 90px;
+  accent-color: var(--acc); cursor: pointer;
+  writing-mode: vertical-lr; direction: rtl;   /* alto = veloce */
+}
+
+.boost, .hunt, .estop {
+  font: 700 13px/1 inherit; letter-spacing: 1px; cursor: pointer;
+  border-radius: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+  touch-action: none;
+}
+.boost { width: 94px; height: 72px; }
+.boost.on {
+  background: var(--boost); border-color: var(--boost); color: #2a1804;
+  box-shadow: 0 0 26px rgba(255,179,71,.45);
+}
+.hunt { width: 94px; height: 52px; font-size: 12px; }
+.hunt.on {
+  background: var(--hunt); border-color: var(--hunt); color: #1a0b33;
+  box-shadow: 0 0 22px rgba(185,140,255,.45);
+}
+
+.estop {
+  position: absolute; left: 14px; bottom: calc(14px + var(--pad));
+  width: 56px; height: 56px; border-radius: 50%;
+  font-size: 15px; color: var(--stop); border-color: rgba(255,95,95,.4);
+  background: rgba(255,95,95,.1);
+}
+.estop:active { background: var(--stop); color: #2a0505; }
+
+/* ── impostazioni ──────────────────────────────────────────── */
+.sheet {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+  background: rgba(6,9,13,.72); backdrop-filter: blur(6px); padding: 16px;
+}
+.sheet-inner {
+  width: min(480px, 100%); max-height: 92vh; overflow-y: auto;
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 18px; padding: 18px;
+}
+.sheet-head { display: flex; align-items: center; margin-bottom: 6px; }
+.sheet-head h2 { font-size: 16px; margin: 0; flex: 1; }
+
+.field {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 2px; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.field.col { flex-direction: column; align-items: stretch; gap: 9px; }
+.field span { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.field small { color: var(--dim); font-size: 11.5px; line-height: 1.35; }
+.field input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--acc); flex: none; }
+.field.range { flex-direction: column; align-items: stretch; gap: 8px; }
+.field.range input[type=range] { width: 100%; accent-color: var(--acc); }
+
+.segmented { display: flex; gap: 6px; }
+.segmented button {
+  flex: 1; font: inherit; font-size: 13px; padding: 10px 4px; cursor: pointer;
+  background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 10px;
+}
+.segmented button.on { background: var(--hunt); border-color: var(--hunt); color: #1a0b33; font-weight: 600; }
+
+.stats {
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  padding: 12px 2px; line-height: 1.6;
+}
+
+/* ── toast ─────────────────────────────────────────────────── */
+.toast {
+  position: fixed; left: 50%; bottom: calc(22px + var(--pad)); transform: translateX(-50%);
+  z-index: 30; max-width: 88vw; padding: 11px 17px; border-radius: 11px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+  font-size: 13.5px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.5);
+}
+
+/* In verticale la plancia resta usabile, ma è pensata per l'orizzontale. */
+@media (orientation: portrait) and (max-width: 620px) {
+  .stick-zone { right: 0; bottom: 168px; }
+  .right-rail {
+    flex-direction: row; top: auto; left: 0; width: auto; height: 158px;
+    padding: 12px 14px calc(12px + var(--pad));
+    background: linear-gradient(0deg, rgba(21,26,34,.55), transparent);
+  }
+  .cap { flex-direction: column; }
+  .cap-slider { min-height: 70px; }
+  .boost { width: 100px; height: 100px; }
+  .hunt { width: 100px; height: 100px; }
+  .estop { bottom: auto; top: 54px; left: auto; right: 14px; }
+}

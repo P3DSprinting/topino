@@ -1,0 +1,8 @@
+# Le foto della scatola e del manuale ritraggono casa e mani: restano in locale.
+# Il repository è pubblico perché GitHub Pages lo richiede sul piano gratuito.
+*.jpeg
+*.jpg
+*.png
+!app/icons/*.png
+
+.claude/
