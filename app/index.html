@@ -33,16 +33,22 @@
 
     <button id="btnConnect" class="cta">Connetti il topino</button>
     <p id="splashMsg" class="msg"></p>
+    <button id="btnAnyDevice" class="ghost wide">Non lo trova? Mostra tutti i dispositivi</button>
 
     <details class="help">
-      <summary>Non si connette?</summary>
+      <summary>Il telefono non lo vede</summary>
       <ul>
-        <li>Accendi il topino con l'interruttore sotto la pancia: il LED deve <b>lampeggiare</b>.</li>
-        <li>Su Android serve il Bluetooth <b>e la posizione</b> attivi (lo impone Android, non l'app).</li>
-        <li>Nell'elenco cerca il dispositivo chiamato <b>pets</b>.</li>
-        <li>Se l'app ufficiale è aperta, chiudila: tiene la connessione occupata.</li>
+        <li><b>Il topino accetta una sola connessione.</b> Se è ancora agganciato al PC o
+            all'app ufficiale, smette di farsi vedere da chiunque altro: chiudi quella
+            scheda o quell'app, poi <b>spegni e riaccendi</b> il topino.</li>
+        <li>Il LED deve <b>lampeggiare</b>. Fisso = già collegato a qualcosa. Spento = da caricare.</li>
+        <li>Su Android serve la <b>posizione attiva</b> (il GPS acceso, non solo il permesso):
+            senza, Android non restituisce nessun dispositivo Bluetooth. Lo impone il sistema, non l'app.</li>
+        <li>Chrome deve avere il permesso <b>Dispositivi nelle vicinanze</b>
+            (Impostazioni Android → App → Chrome → Autorizzazioni).</li>
+        <li>Nell'elenco cerca <b>pets</b>. Se non c'è, prova il pulsante qui sopra:
+            mostra tutto, comprese cuffie e orologi.</li>
       </ul>
-      <button id="btnAnyDevice" class="ghost">Mostra tutti i dispositivi</button>
     </details>
   </div>
 </div>

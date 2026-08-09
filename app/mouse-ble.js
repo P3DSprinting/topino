@@ -94,10 +94,22 @@ export class MouseRacer extends EventTarget {
     this._manualDisconnect = false;
     this._status('scanning');
 
+    /* Su desktop il filtro per nome è indulgente, su Android no: lì il nome
+       deve stare nel pacchetto di advertising, altrimenti il dispositivo
+       semplicemente non compare. Passo più filtri in OR — nome esatto,
+       prefisso e service UUID — così basta che una delle tre condizioni
+       sia annunciata perché il topino salti fuori. */
     this.device = await navigator.bluetooth.requestDevice(
       anyDevice
         ? { acceptAllDevices: true, optionalServices: [SVC_MAIN] }
-        : { filters: [{ name: 'pets' }], optionalServices: [SVC_MAIN] }
+        : {
+            filters: [
+              { name: 'pets' },
+              { namePrefix: 'pet' },
+              { services: [SVC_MAIN] },
+            ],
+            optionalServices: [SVC_MAIN],
+          }
     );
     this.device.addEventListener('gattserverdisconnected', () => this._onDisconnected());
 

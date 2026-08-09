@@ -54,12 +54,21 @@ async function connect(anyDevice = false) {
   btn.disabled = true;
   msg.className = 'msg'; msg.textContent = 'ricerca in corso…';
   try {
+    if (await navigator.bluetooth.getAvailability?.() === false)
+      throw new Error('Il Bluetooth sembra spento: accendilo e riprova.');
     await mouse.connect({ anyDevice });
   } catch (e) {
-    // chiudere il selettore di Chrome lancia NotFoundError: non è un guasto
-    const cancelled = e.name === 'NotFoundError' && /cancel|user/i.test(e.message);
+    // Chiudere il selettore di Chrome lancia NotFoundError, esattamente come
+    // quando la lista era vuota: i due casi non sono distinguibili, quindi
+    // do il consiglio che risolve quello che capita più spesso.
+    const cancelled = e.name === 'NotFoundError';
     msg.className = 'msg' + (cancelled ? '' : ' err');
-    msg.textContent = cancelled ? 'nessun dispositivo scelto' : e.message;
+    msg.textContent = cancelled
+      ? (anyDevice
+          ? 'Nessun dispositivo scelto. Se "pets" non compare nemmeno qui, spegni e riaccendi il topino.'
+          : 'Non trovato? Il topino resta invisibile se è ancora collegato al PC o all\'app ufficiale. Vedi l\'elenco qui sotto.')
+      : e.message;
+    if (cancelled && !anyDevice) $('splash').querySelector('.help').open = true;
   } finally {
     btn.disabled = false;
   }
