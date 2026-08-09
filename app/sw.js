@@ -3,7 +3,7 @@
    nessun motivo per cui debba dipendere da internet — e il salotto è spesso
    il punto peggiore del Wi-Fi di casa. */
 
-const CACHE = 'topino-v1';
+const CACHE = 'topino-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const ASSETS = [
   './app.js',
   './mouse-ble.js',
   './hunt.js',
+  './remote.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',

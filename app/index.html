@@ -153,6 +153,22 @@
       </div>
     </div>
 
+    <label class="field">
+      <span>Ascolta comandi a distanza
+        <small>Per Alexa. Lascia questo dispositivo acceso, connesso e con l'app in primo piano.</small></span>
+      <input id="optRemote" type="checkbox">
+    </label>
+
+    <div class="field col" id="remoteBox">
+      <span>Canale privato <small>incollalo nella skill Alexa. Chi lo conosce può muovere il topino.</small></span>
+      <div class="row-inline">
+        <code id="remoteTopic">—</code>
+        <button id="btnCopyTopic" class="ghost">📋</button>
+        <button id="btnNewTopic" class="ghost">↻</button>
+      </div>
+      <small id="remoteState">non in ascolto</small>
+    </div>
+
     <div class="stats" id="stats">—</div>
 
     <button id="btnDisconnect" class="ghost wide">Disconnetti</button>

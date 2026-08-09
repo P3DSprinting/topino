@@ -29,6 +29,9 @@ due valori. Dettagli in [PROTOCOL.md](PROTOCOL.md).
   (pause immobili, scatti, zigzag, retromarcia) in tre profili. Si spegne da sola dopo 10 minuti.
 - **Joypad**: stick sinistro, R2 per il boost, cerchio per lo stop. Testato con DualSense.
 - **PWA**: si installa dalla schermata Home, va a schermo intero e funziona offline.
+- **Comandi vocali Alexa** da fuori casa — «Alexa, chiedi a topino di avviare la caccia».
+  Vedi [`alexa/README.md`](alexa/README.md): serve solo un account Amazon Developer
+  gratuito, niente AWS e niente server.
 - Fermate di sicurezza al rilascio, a schermo spento e in caso di disconnessione.
 
 ## Requisiti
@@ -49,7 +52,12 @@ app/
   mouse-ble.js        driver BLE: vettore analogico → pacchetti a 8 direzioni
   hunt.js             modalità caccia (macchina a stati)
   app.js              input: pollice, joypad, tastiera
+  remote.js           ascolto comandi a distanza via ntfy.sh (Alexa)
   sw.js               service worker (funziona offline)
+alexa/
+  index.js            codice della skill Alexa-hosted
+  interaction-model.json  modello vocale italiano
+  README.md           istruzioni passo passo per la console Amazon
 tools/
   calib.html          calibrazione guidata: direzioni, watchdog, velocità minima
   diag.html           diagnostica BLE: albero GATT, pacchetti grezzi

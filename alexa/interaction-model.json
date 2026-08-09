@@ -1,0 +1,72 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "topino",
+      "intents": [
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        {
+          "name": "AvviaCacciaIntent",
+          "slots": [
+            { "name": "profilo", "type": "TipoProfilo" }
+          ],
+          "samples": [
+            "avvia la caccia",
+            "inizia la caccia",
+            "parti",
+            "vai",
+            "fai giocare il gatto",
+            "fai partire il topino",
+            "muoviti",
+            "avvia la caccia {profilo}",
+            "caccia {profilo}",
+            "modalità {profilo}",
+            "fai il {profilo}"
+          ]
+        },
+        {
+          "name": "FermaIntent",
+          "samples": [
+            "ferma il topino",
+            "ferma",
+            "fermati",
+            "basta",
+            "spegni il topino",
+            "smetti"
+          ]
+        },
+        {
+          "name": "VelocitaIntent",
+          "slots": [
+            { "name": "quanto", "type": "TipoVelocita" }
+          ],
+          "samples": [
+            "vai {quanto}",
+            "muoviti {quanto}",
+            "velocità {quanto}",
+            "corri {quanto}"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "TipoProfilo",
+          "values": [
+            { "name": { "value": "timido", "synonyms": ["calmo", "tranquillo", "piano"] } },
+            { "name": { "value": "nervoso", "synonyms": ["normale", "medio"] } },
+            { "name": { "value": "impazzito", "synonyms": ["matto", "scatenato", "pazzo", "veloce"] } }
+          ]
+        },
+        {
+          "name": "TipoVelocita",
+          "values": [
+            { "name": { "value": "piano", "synonyms": ["lento", "lentamente", "calmo"] } },
+            { "name": { "value": "forte", "synonyms": ["veloce", "velocemente", "al massimo"] } }
+          ]
+        }
+      ]
+    }
+  }
+}

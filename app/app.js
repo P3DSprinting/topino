@@ -4,18 +4,21 @@
  */
 import { MouseRacer } from './mouse-ble.js';
 import { Hunt } from './hunt.js';
+import { Remote, nuovoCanale } from './remote.js';
 
 const $ = id => document.getElementById(id);
 const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 
 const mouse = new MouseRacer();
 const hunt = new Hunt(mouse);
+const remote = new Remote(mouse, hunt);
 
 /* ── preferenze ─────────────────────────────────────────────── */
 const PREFS_KEY = 'topino.prefs.v1';
 const prefs = {
   blend: true, invert: false, deadzone: 12, minSpeed: 2, hz: 20,
   cap: 55, profile: 'nervoso', dual: false,
+  remote: false, topic: '',
   ...JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'),
 };
 const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
@@ -361,6 +364,38 @@ bindRange('optDeadzone', 'deadzone');
 bindRange('optMinSpeed', 'minSpeed');
 bindRange('optHz', 'hz');
 
+/* ── comandi a distanza (Alexa) ─────────────────────────────── */
+if (!prefs.topic) { prefs.topic = nuovoCanale(); savePrefs(); }
+
+function applyRemote() {
+  $('remoteTopic').textContent = prefs.topic;
+  $('optRemote').checked = prefs.remote;
+  if (prefs.remote) remote.start(prefs.topic); else remote.stop();
+}
+
+remote.addEventListener('state', e => {
+  const { on, error } = e.detail;
+  const el = $('remoteState');
+  el.className = on && !error ? 'on' : '';
+  el.textContent = !on ? 'non in ascolto' : (error || 'in ascolto ✓');
+});
+remote.addEventListener('command', e => {
+  const { cmd, ok } = e.detail;
+  toast(ok ? `da Alexa: ${cmd}` : `comando sconosciuto: ${cmd}`);
+  navigator.vibrate?.(ok ? 25 : [20, 60, 20]);
+});
+
+$('optRemote').addEventListener('change', e => {
+  prefs.remote = e.target.checked; savePrefs(); applyRemote();
+  if (prefs.remote) toast('in ascolto. Lascia l\'app aperta e connessa.', 4000);
+});
+$('btnCopyTopic').onclick = () => navigator.clipboard.writeText(prefs.topic)
+  .then(() => toast('canale copiato'));
+$('btnNewTopic').onclick = () => {
+  prefs.topic = nuovoCanale(); savePrefs(); applyRemote();
+  toast('canale nuovo: va aggiornato anche nella skill Alexa', 4000);
+};
+
 document.querySelectorAll('#ctrlMode button').forEach(b => b.onclick = () => {
   prefs.dual = b.dataset.mode === 'dual';
   mouse.stop().catch(() => {});
@@ -397,10 +432,11 @@ if ('serviceWorker' in navigator) {
 }
 
 applyPrefs();
+applyRemote();
 
 // gancio per provare la plancia da locale senza il topino acceso
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-  window.__topino = { mouse, hunt, prefs };
+  window.__topino = { mouse, hunt, remote, prefs };
 }
 
 if (!navigator.bluetooth) {
