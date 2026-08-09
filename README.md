@@ -21,6 +21,9 @@ due valori. Dettagli in [PROTOCOL.md](PROTOCOL.md).
 ## Funzioni
 
 - **Joystick analogico** che nasce sotto il pollice, ovunque tu lo appoggi.
+- **Due schemi di comando**: uno stick (direzione e velocità insieme) oppure
+  **due stick stile radiocomandata** — sinistro acceleratore, destro sterzo.
+  A gas fermo lo sterzo fa ruotare il topino sul posto.
 - **Limite di velocità** regolabile + tasto **boost** che lo scavalca finché lo tieni premuto.
 - **Modalità caccia**: il topino si muove da solo con pattern da preda
   (pause immobili, scatti, zigzag, retromarcia) in tre profili. Si spegne da sola dopo 10 minuti.

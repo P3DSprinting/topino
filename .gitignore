@@ -6,3 +6,5 @@
 !app/icons/*.png
 
 .claude/
+
+.playwright-mcp/

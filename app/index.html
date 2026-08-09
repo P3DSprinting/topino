@@ -64,14 +64,25 @@
     <button id="btnMenu" class="icon-btn" aria-label="Impostazioni">⚙</button>
   </header>
 
-  <!-- metà sinistra: il pollice atterra dove vuole e il joystick nasce lì sotto -->
+  <!-- Il pollice atterra dove vuole e il joystick nasce lì sotto.
+       A stick singolo questa zona comanda tutto; a due stick è l'acceleratore. -->
   <div id="stickZone" class="stick-zone">
-    <div id="stickBase" class="stick-base">
+    <div class="stick-base">
       <div class="stick-ring"></div>
       <div class="stick-cross"></div>
-      <div id="stickKnob" class="stick-knob"></div>
+      <div class="stick-knob"></div>
     </div>
-    <p id="stickHint" class="stick-hint">appoggia il pollice qui</p>
+    <p class="stick-hint" data-mono="appoggia il pollice qui" data-dual="GAS ▲▼">appoggia il pollice qui</p>
+  </div>
+
+  <!-- seconda zona: solo in modalità due stick, è il volante -->
+  <div id="stickZoneR" class="stick-zone right hidden">
+    <div class="stick-base">
+      <div class="stick-ring"></div>
+      <div class="stick-cross"></div>
+      <div class="stick-knob"></div>
+    </div>
+    <p class="stick-hint">STERZO ◀▶</p>
   </div>
 
   <!-- lato destro: comandi raggiungibili senza spostare la mano -->
@@ -96,6 +107,16 @@
     <div class="sheet-head">
       <h2>Impostazioni</h2>
       <button id="btnCloseSheet" class="icon-btn">✕</button>
+    </div>
+
+    <div class="field col">
+      <span>Schema di comando</span>
+      <div class="segmented" id="ctrlMode">
+        <button data-mode="mono" class="on">Uno stick</button>
+        <button data-mode="dual">Due stick · gas + sterzo</button>
+      </div>
+      <small>Con due stick il sinistro fa solo avanti/indietro e il destro solo
+             destra/sinistra, come una radiocomandata. Vale anche per il DualSense.</small>
     </div>
 
     <label class="field">

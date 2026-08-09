@@ -15,7 +15,7 @@ const hunt = new Hunt(mouse);
 const PREFS_KEY = 'topino.prefs.v1';
 const prefs = {
   blend: true, invert: false, deadzone: 12, minSpeed: 2, hz: 20,
-  cap: 55, profile: 'nervoso',
+  cap: 55, profile: 'nervoso', dual: false,
   ...JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'),
 };
 const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
@@ -36,6 +36,13 @@ function applyPrefs() {
   $('speedCap').value      = prefs.cap;       $('capVal').textContent = prefs.cap + '%';
   document.querySelectorAll('#huntProfile button')
     .forEach(b => b.classList.toggle('on', b.dataset.profile === prefs.profile));
+
+  document.body.classList.toggle('dual', prefs.dual);
+  $('stickZoneR').classList.toggle('hidden', !prefs.dual);
+  document.querySelectorAll('#ctrlMode button')
+    .forEach(b => b.classList.toggle('on', (b.dataset.mode === 'dual') === prefs.dual));
+  const hint = $('stickZone').querySelector('.stick-hint');
+  hint.textContent = prefs.dual ? hint.dataset.dual : hint.dataset.mono;
 }
 
 /* ── toast ──────────────────────────────────────────────────── */
@@ -126,74 +133,133 @@ document.addEventListener('visibilitychange', async () => {
 });
 
 /* ── joystick ───────────────────────────────────────────────── */
-const zone = $('stickZone'), base = $('stickBase'), knob = $('stickKnob');
-let stickId = null, originX = 0, originY = 0, radius = 110;
-let stickVec = { x: 0, y: 0 }, stickBeat = null;
 
 const stickRadius = () => clamp(Math.min(innerWidth, innerHeight) * 0.26, 76, 130);
 
-function stickDown(e) {
-  if (stickId !== null) return;               // un solo pollice sul joystick
-  stickId = e.pointerId;
-  zone.setPointerCapture(e.pointerId);
-  radius = stickRadius();
+/**
+ * Joystick fluttuante su una zona dello schermo: l'origine nasce dove atterra
+ * il pollice, non in un punto fisso.
+ * `axis` limita la corsa — a due stick il gas è solo verticale e lo sterzo solo
+ * orizzontale, così un pollice non può sporcare l'asse dell'altro.
+ */
+function makeStick(zone, axis = 'both') {
+  const base = zone.querySelector('.stick-base');
+  const knob = zone.querySelector('.stick-knob');
+  let id = null, ox = 0, oy = 0, radius = 110;
+  const vec = { x: 0, y: 0 };
 
-  const r = zone.getBoundingClientRect();
-  originX = e.clientX - r.left;
-  originY = e.clientY - r.top;
-  base.style.left = originX + 'px';
-  base.style.top  = originY + 'px';
-  base.style.width = base.style.height = radius * 2 + 'px';
-  base.style.margin = `${-radius}px 0 0 ${-radius}px`;
+  const down = e => {
+    if (id !== null) return;                   // un solo pollice per zona
+    id = e.pointerId;
+    radius = stickRadius();
 
-  zone.classList.add('active');
-  hunt.stop();                                 // il tocco riprende il controllo manuale
-  stickMove(e);
+    // L'origine va fissata PRIMA di qualunque cosa possa fallire: se restasse
+    // a zero, lo stick crederebbe il pollice all'estremità e lancerebbe il
+    // topino a tutta velocità nella direzione sbagliata.
+    const r = zone.getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    base.style.left = ox + 'px';
+    base.style.top = oy + 'px';
+    base.style.width = base.style.height = radius * 2 + 'px';
+    base.style.margin = `${-radius}px 0 0 ${-radius}px`;
 
-  // Un pollice fermo non genera eventi: senza questo battito il driver
-  // crederebbe che l'input sia sparito e fermerebbe il topino dopo 400 ms,
-  // proprio mentre stai tenendo lo stick premuto.
-  clearInterval(stickBeat);
-  stickBeat = setInterval(() => mouse.setVector(stickVec.x, stickVec.y), 100);
+    // il pollice che esce dalla zona non deve perdere il comando
+    try { zone.setPointerCapture(e.pointerId); } catch { /* puntatore già chiuso */ }
+
+    zone.classList.add('active');
+    hunt.stop();                               // il tocco riprende il controllo manuale
+    move(e);
+    startBeat();
+  };
+
+  const move = e => {
+    if (e.pointerId !== id) return;
+    const r = zone.getBoundingClientRect();
+    let dx = axis === 'y' ? 0 : e.clientX - r.left - ox;
+    let dy = axis === 'x' ? 0 : e.clientY - r.top - oy;
+
+    const d = Math.hypot(dx, dy);
+    if (d > radius) { dx *= radius / d; dy *= radius / d; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    vec.x = dx / radius;
+    vec.y = -dy / radius;                      // lo schermo cresce in basso, il topino in avanti
+    pushSticks();
+  };
+
+  const up = e => {
+    if (e.pointerId !== id) return;
+    id = null;
+    vec.x = vec.y = 0;
+    zone.classList.remove('active');
+    knob.style.transform = 'translate(0,0)';
+    stopBeatIfIdle();
+  };
+
+  zone.addEventListener('pointerdown', down);
+  zone.addEventListener('pointermove', move);
+  zone.addEventListener('pointerup', up);
+  zone.addEventListener('pointercancel', up);
+  zone.addEventListener('contextmenu', e => e.preventDefault());
+
+  return { vec, get active() { return id !== null; } };
 }
 
-function stickMove(e) {
-  if (e.pointerId !== stickId) return;
-  const r = zone.getBoundingClientRect();
-  let dx = e.clientX - r.left - originX;
-  let dy = e.clientY - r.top  - originY;
+const stickL = makeStick($('stickZone'));
+const stickR = makeStick($('stickZoneR'), 'x');
 
-  const d = Math.hypot(dx, dy);
-  if (d > radius) { dx *= radius / d; dy *= radius / d; }
-  knob.style.transform = `translate(${dx}px, ${dy}px)`;
+/** Da angolo (gradi, 0 = avanti, orario) e intensità al vettore che vuole il driver. */
+const polar = (deg, mag) => {
+  const r = deg * Math.PI / 180;
+  return { x: Math.sin(r) * mag, y: Math.cos(r) * mag };
+};
 
-  // schermo: y cresce verso il basso. Il topino: y cresce in avanti.
-  stickVec = { x: dx / radius, y: -dy / radius * (prefs.invert ? -1 : 1) };
-  mouse.setVector(stickVec.x, stickVec.y);
+/**
+ * Schema radiocomandata: il gas decide *quanto* e in che verso, lo sterzo
+ * *quanto piega*. Il topino conosce solo 8 direzioni, quindi lo sterzo pieno
+ * corrisponde a una diagonale (45° dalla marcia) e il driver interpola il resto.
+ * A gas fermo lo sterzo lo fa ruotare sul posto — comodo per puntarlo.
+ */
+function dualToVector(gas, steer) {
+  const dz = prefs.deadzone / 100;
+  const ag = Math.abs(gas), as = Math.abs(steer);
+
+  if (ag < dz) return as < dz ? { x: 0, y: 0 } : polar(steer > 0 ? 90 : 270, as);
+
+  // in retromarcia specchio l'angolo, così "destra" resta la destra dello schermo
+  return gas >= 0 ? polar(steer * 45, ag) : polar(180 - steer * 45, ag);
 }
 
-function stickUp(e) {
-  if (e.pointerId !== stickId) return;
-  stickId = null;
+function pushSticks() {
+  const inv = prefs.invert ? -1 : 1;
+  if (prefs.dual) {
+    const v = dualToVector(stickL.vec.y * inv, stickR.vec.x);
+    mouse.setVector(v.x, v.y);
+  } else {
+    mouse.setVector(stickL.vec.x, stickL.vec.y * inv);
+  }
+}
+
+/* Un pollice fermo non genera eventi: senza questo battito il driver crederebbe
+   che l'input sia sparito e fermerebbe il topino dopo 400 ms, proprio mentre
+   stai tenendo lo stick premuto. */
+let stickBeat = null;
+function startBeat() {
+  if (!stickBeat) stickBeat = setInterval(pushSticks, 100);
+}
+function stopBeatIfIdle() {
+  if (stickL.active || stickR.active) { pushSticks(); return; }
   clearInterval(stickBeat); stickBeat = null;
-  stickVec = { x: 0, y: 0 };
-  zone.classList.remove('active');
-  knob.style.transform = 'translate(0,0)';
   mouse.stop().catch(() => {});
 }
-
-zone.addEventListener('pointerdown', stickDown);
-zone.addEventListener('pointermove', stickMove);
-zone.addEventListener('pointerup', stickUp);
-zone.addEventListener('pointercancel', stickUp);
-zone.addEventListener('contextmenu', e => e.preventDefault());
 
 /* ── boost / stop / caccia ──────────────────────────────────── */
 const boostBtn = $('btnBoost');
 const setBoost = on => {
   mouse.setBoost(on);
   boostBtn.classList.toggle('on', on);
-  zone.classList.toggle('boosting', on);
+  document.body.classList.toggle('boosting', on);
   if (on) navigator.vibrate?.(18);
 };
 boostBtn.addEventListener('pointerdown', e => { e.preventDefault(); setBoost(true); });
@@ -229,12 +295,20 @@ addEventListener('gamepaddisconnected', e => { if (padIndex === e.gamepad.index)
 
 function pollGamepad() {
   requestAnimationFrame(pollGamepad);
-  if (padIndex === null || stickId !== null) return;   // il tocco ha la precedenza
+  if (padIndex === null || stickL.active || stickR.active) return;  // il tocco ha la precedenza
   const pad = navigator.getGamepads?.()[padIndex];
   if (!pad) return;
 
-  const x = pad.axes[0] ?? 0;
-  const y = -(pad.axes[1] ?? 0) * (prefs.invert ? -1 : 1);
+  const inv = prefs.invert ? -1 : 1;
+  let x, y;
+  if (prefs.dual) {
+    // stick sinistro verticale = gas, stick destro orizzontale = sterzo
+    const v = dualToVector(-(pad.axes[1] ?? 0) * inv, pad.axes[2] ?? 0);
+    x = v.x; y = v.y;
+  } else {
+    x = pad.axes[0] ?? 0;
+    y = -(pad.axes[1] ?? 0) * inv;
+  }
   if (Math.hypot(x, y) > 0.02) { hunt.stop(); mouse.setVector(x, y); }
 
   const r2 = pad.buttons[7]?.value ?? 0;               // grilletto destro
@@ -286,6 +360,13 @@ const bindRange = (id, key) => $(id).addEventListener('input', e => {
 bindRange('optDeadzone', 'deadzone');
 bindRange('optMinSpeed', 'minSpeed');
 bindRange('optHz', 'hz');
+
+document.querySelectorAll('#ctrlMode button').forEach(b => b.onclick = () => {
+  prefs.dual = b.dataset.mode === 'dual';
+  mouse.stop().catch(() => {});
+  applyPrefs(); savePrefs();
+  toast(prefs.dual ? 'due stick: sinistro gas, destro sterzo' : 'uno stick: direzione e velocità insieme');
+});
 
 document.querySelectorAll('#huntProfile button').forEach(b => b.onclick = () => {
   prefs.profile = b.dataset.profile; applyPrefs(); savePrefs();
