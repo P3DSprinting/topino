@@ -1,6 +1,6 @@
 # Skill Alexa per il topino
 
-> **"Alexa, chiedi a topino di avviare la caccia"**
+> **"Alexa, chiedi a topo robot di avviare la caccia"**
 
 ## Come funziona, in due righe
 
@@ -9,7 +9,7 @@ un comando testuale su un canale di `ntfy.sh`; l'app aperta e connessa al topino
 a casa lo riceve e lo esegue.
 
 ```
-"Alexa, chiedi a topino…"  →  skill (ospitata da Amazon)  →  ntfy.sh
+"Alexa, chiedi a topo robot…"  →  skill (ospitata da Amazon)  →  ntfy.sh
                                                                ↓
                         topino  ←──BLE──  app aperta a casa (in ascolto)
 ```
@@ -47,7 +47,7 @@ Su **developer.amazon.com/alexa/console/ask**, accedi **con lo stesso account
 Amazon del tuo Echo** (se è diverso, l'Echo non vedrà mai la skill).
 
 1. **Create Skill**
-2. **Skill name**: `topino`
+2. **Skill name**: `topo robot`
 3. **Primary locale / Default language**: **Italiano (IT)** — dev'essere la stessa
    lingua del tuo Echo
 4. **Choose a model**: **Custom**
@@ -89,7 +89,7 @@ const CANALE = 'topino-a3f9k2m8x1qz4b';
 
 Scheda **Test** in alto, e sposta il menù a tendina da *Off* a **Development**.
 
-Scrivi (o parla): `apri topino`, poi `avvia la caccia`.
+Scrivi (o parla): `apri topo robot`, poi `avvia la caccia`.
 
 Se l'app a casa è in ascolto, compare un avviso `da Alexa: caccia:nervoso` e il
 topino parte.
@@ -103,12 +103,12 @@ modalità Development è già attiva su tutti i dispositivi del tuo account.
 
 | Frase | Effetto |
 |---|---|
-| «Alexa, chiedi a topino di avviare la caccia» | parte la caccia, andatura *nervoso* |
+| «Alexa, chiedi a topo robot di avviare la caccia» | parte la caccia, andatura *nervoso* |
 | «…di avviare la caccia impazzita» | andatura più agitata |
 | «…caccia timida» | pause lunghe, scatti corti |
-| «Alexa, chiedi a topino di fermarsi» | stop immediato |
+| «Alexa, chiedi a topo robot di fermarsi» | stop immediato |
 | «…di andare piano» / «…di andare forte» | tetto di velocità al 30% / 100% |
-| «Alexa, apri topino» | apre la sessione: poi basta dire «avvia la caccia» |
+| «Alexa, apri topo robot» | apre la sessione: poi basta dire «avvia la caccia» |
 
 ## Se non funziona
 
